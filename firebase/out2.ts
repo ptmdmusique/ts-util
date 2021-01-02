@@ -1,0 +1,1 @@
+export const totalVolume = 49894;

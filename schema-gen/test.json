@@ -1,0 +1,49 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "Quiz": {
+            "properties": {
+                "grade": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "grade",
+                "id"
+            ],
+            "type": "object"
+        }
+    },
+    "properties": {
+        "age": {
+            "type": "number"
+        },
+        "id": {
+            "type": "string"
+        },
+        "isMale": {
+            "type": "boolean"
+        },
+        "name": {
+            "type": "string"
+        },
+        "quiz": {
+            "items": {
+                "$ref": "#/definitions/Quiz"
+            },
+            "type": "array"
+        }
+    },
+    "required": [
+        "age",
+        "id",
+        "isMale",
+        "name",
+        "quiz"
+    ],
+    "type": "object"
+}
+
