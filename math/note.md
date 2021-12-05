@@ -1,0 +1,1 @@
+to run .nnd file, make sure to install [this extension](https://marketplace.visualstudio.com/items?itemName=donjayamanne.typescript-notebook)

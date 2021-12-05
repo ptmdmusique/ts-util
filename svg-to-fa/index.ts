@@ -1,14 +1,15 @@
 import fs from "fs";
 import lodash from "lodash";
 
-import * as data from "./icon_json/set.json";
-// import * as data from "./icon_json/SW_Icon_Set.json";
+// import * as data from "./icon_json/set.json";
+import * as data from "./icon_json/SW_Icon_Set.json";
 
 const writeTSFileFromJSON = () => {
   // FA info
   const setPrefix = "ci"; // custom icon
-  // const size = 20;
-  const height = 1024;
+  // const { width, height } = data.metadata.importSize;
+  const width = 900;
+  const height = 900;
   const ligatures: string[] = [];
   const unicode = "";
 
@@ -33,8 +34,6 @@ const writeTSFileFromJSON = () => {
         break;
     }
     const pathList = icon.paths;
-
-    const width = icon.width || 1024;
 
     const objName = lodash.camelCase(rawIconName);
     const iconObj = {

@@ -3,8 +3,8 @@ const sample =
 
 function getImages(htmlString: string) {
   const imgRex = /<img.*?src="(.*?)"[^>]+>/g;
-  const images = [];
-  let img;
+  const images: string[] = [];
+  let img: any;
   while ((img = imgRex.exec(htmlString))) {
     images.push(img[1]);
   }

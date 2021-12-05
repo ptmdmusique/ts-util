@@ -1,0 +1,234 @@
+{
+    "cells": [
+        {
+            "language": "typescript",
+            "source": [
+                "class Vector {\r\n  x: number;\r\n  y: number;\r\n\r\n  constructor(x: number, y: number) {\r\n    this.x = x;\r\n    this.y = y;\r\n  }\r\n\r\n  clone(): Vector {\r\n    return new Vector(this.x, this.y);\r\n  }\r\n\r\n  len(): number {\r\n    return Math.sqrt(this.x * this.x + this.y * this.y);\r\n  }\r\n\r\n  toPoint(): Point {\r\n    return [this.x, this.y];\r\n  }\r\n\r\n  static fromPoint(p: Point): Vector {\r\n    return new Vector(p[0], p[1]);\r\n  }\r\n\r\n  static diff(v1: Vector, v2: Vector): Vector {\r\n    return new Vector(v1.x - v2.x, v1.y - v2.y);\r\n  }\r\n\r\n  static normalize(v: Vector): Vector {\r\n    return new Vector(v.x / v.len(), v.y / v.len());\r\n  }\r\n\r\n  static dot(v1: Vector, v2: Vector): number {\r\n    return v1.x * v2.x + v1.y * v2.y;\r\n  }\r\n\r\n  static orthogonal(v: Vector): Vector {\r\n    return new Vector(v.y, -v.x);\r\n  }\r\n\r\n  static negate(v: Vector): Vector {\r\n    return new Vector(-v.x, -v.y);\r\n  }\r\n\r\n  distance(v: Vector) {\r\n    const x = this.x - v.x;\r\n    const y = this.y - v.y;\r\n    return Math.sqrt(x * x + y * y);\r\n  }\r\n}\r\n\r\ntype Point = [number, number];\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "const convexHullList: Point[] = [\r\n  [1, 2],\r\n  [2, 4],\r\n  [5, 3],\r\n  [2, 0],\r\n];\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "const sortPointListClockwise = (points: Point[]) => {\r\n  const temp = points.slice();\r\n  // * Find center\r\n  // Find min max to get center\r\n  // Sort from top to bottom\r\n  temp.sort((a, b) => a[1] - b[1]);\r\n  // Get center y\r\n  const cy = (temp[0][1] + temp[temp.length - 1][1]) / 2;\r\n\r\n  // Sort from right to left\r\n  temp.sort((a, b) => b[0] - a[0]);\r\n  // Get center x\r\n  const cx = (temp[0][0] + temp[temp.length - 1][0]) / 2;\r\n\r\n  const center = Vector.fromPoint([cx, cy]);\r\n\r\n  // * Sort based on angle\r\n  const sortedPoints = points.sort((a, b) => {\r\n    const d1 = Vector.diff(Vector.fromPoint(a), center).toPoint();\r\n    const d2 = Vector.diff(Vector.fromPoint(b), center).toPoint();\r\n    const angle1 = Math.atan2(d1[1], d1[0]);\r\n    const angle2 = Math.atan2(d2[1], d2[0]);\r\n    return angle1 - angle2;\r\n  });\r\n  return sortedPoints;\r\n};\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "import { Plotly } from \"node-kernel\";\r\n\r\nconst colorList = [\r\n  [255, 140, 184],\r\n  [52, 210, 235],\r\n];\r\nconst drawPolygon = (listOfPointList: Point[][]) => {\r\n  const layout: Parameters<typeof Plotly.newPlot>[2] = {\r\n    xaxis: {\r\n      range: [0, 9],\r\n      zeroline: false,\r\n    },\r\n    yaxis: {\r\n      range: [0, 11],\r\n      showgrid: false,\r\n    },\r\n    width: 500,\r\n    height: 500,\r\n    shapes: listOfPointList.map((pointList, index) => {\r\n      const color = colorList[index % colorList.length];\r\n      const sortedList = sortPointListClockwise(pointList);\r\n      return {\r\n        type: \"path\",\r\n        path: `M ${sortedList.map(([x, y]) => `${x} ${y} `).join(\"L \")} Z`,\r\n        fillcolor: `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.5)`,\r\n        line: {\r\n          color: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,\r\n        },\r\n      };\r\n    }),\r\n  };\r\n\r\n  // There is no HTML element named `myDiv`, hence the plot is displayed below.\r\n  Plotly.newPlot(\"myDiv\", [], layout);\r\n};\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "drawPolygon([convexHullList]);\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.ts.notebook.plotly+json",
+                            "value": {
+                                "requestId": "x5e12c2236396431bae6972eb58609cc3",
+                                "type": "generatePlot",
+                                "ele": "myDiv",
+                                "data": [],
+                                "layout": {
+                                    "xaxis": {
+                                        "range": [
+                                            0,
+                                            9
+                                        ],
+                                        "zeroline": false
+                                    },
+                                    "yaxis": {
+                                        "range": [
+                                            0,
+                                            11
+                                        ],
+                                        "showgrid": false
+                                    },
+                                    "width": 500,
+                                    "height": 500,
+                                    "shapes": [
+                                        {
+                                            "type": "path",
+                                            "path": "M 2 0 L 5 3 L 2 4 L 1 2  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "type BestOmbb = [Vector, Vector, Vector, Vector];\r\n\r\nconst getOrientedMinimumBoundingBox = (\r\n  pointList: [number, number][],\r\n): Point[] | null => {\r\n  // * Rotating calipers algorithm\r\n  // https://github.com/geidav/ombb-rotating-calipers/blob/master/ombb.js\r\n\r\n  // ? Note: ombb = Oriented Minimum Bounding Box\r\n  // --- Helpers\r\n  const getNextIndex = (currentIndex: number): number =>\r\n    (currentIndex + 1) % pointList.length;\r\n\r\n  const getIntersectionPoint = (\r\n    // point0 and dir0 create line 0\r\n    point0: Vector,\r\n    dir0: Vector,\r\n    // point1 and dir1 create line 1\r\n    point1: Vector,\r\n    dir1: Vector,\r\n  ): Vector => {\r\n    // TODO: figure out the meaning of this\r\n    const dd = dir0.x * dir1.y - dir0.y * dir1.x;\r\n    const xDiff = point1.x - point0.x;\r\n    const yDiff = point1.y - point0.y;\r\n    // dd = 0 => lines are parallel. we don't care as our lines are never parallel.\r\n    const t = (xDiff * dir1.y - yDiff * dir1.x) / dd;\r\n    return new Vector(point0.x + t * dir0.x, point0.y + t * dir0.y);\r\n  };\r\n\r\n  const getNewOmbb = (\r\n    leftStart: Vector,\r\n    leftDir: Vector,\r\n    rightStart: Vector,\r\n    rightDir: Vector,\r\n    topStart: Vector,\r\n    topDir: Vector,\r\n    bottomStart: Vector,\r\n    bottomDir: Vector,\r\n  ): { ombb: BestOmbb; area: number } => {\r\n    const obbUpperLeft = getIntersectionPoint(\r\n      leftStart,\r\n      leftDir,\r\n      topStart,\r\n      topDir,\r\n    );\r\n    const obbUpperRight = getIntersectionPoint(\r\n      rightStart,\r\n      rightDir,\r\n      topStart,\r\n      topDir,\r\n    );\r\n    const obbLowerLeft = getIntersectionPoint(\r\n      bottomStart,\r\n      bottomDir,\r\n      leftStart,\r\n      leftDir,\r\n    );\r\n    const obbLowerRight = getIntersectionPoint(\r\n      bottomStart,\r\n      bottomDir,\r\n      rightStart,\r\n      rightDir,\r\n    );\r\n\r\n    const obbArea =\r\n      obbUpperLeft.distance(obbUpperRight) *\r\n      obbUpperLeft.distance(obbLowerLeft);\r\n\r\n    return {\r\n      area: obbArea,\r\n      ombb: [obbUpperLeft, obbUpperRight, obbLowerLeft, obbLowerRight],\r\n    };\r\n  };\r\n\r\n  // --- Actual implementation\r\n  const vectorList = pointList.map(([x, y]) => new Vector(x, y));\r\n\r\n  // * Normalized vector list (vector with length 1)\r\n  const edgeDirectionList = vectorList.map((v, index) => {\r\n    return Vector.normalize(Vector.diff(vectorList[getNextIndex(index)], v));\r\n  });\r\n\r\n  const minPoint = new Vector(Number.MAX_VALUE, Number.MAX_VALUE);\r\n  const maxPoint = new Vector(-Number.MAX_VALUE, -Number.MAX_VALUE);\r\n  let leftIndex: number;\r\n  let rightIndex: number;\r\n  let topIndex: number;\r\n  let bottomIndex: number;\r\n\r\n  // * Find the outermost points\r\n  for (let i = 0; i < vectorList.length; i++) {\r\n    const vector = vectorList[i];\r\n\r\n    if (vector.x < minPoint.x) {\r\n      minPoint.x = vector.x;\r\n      leftIndex = i;\r\n    }\r\n\r\n    if (vector.x > maxPoint.x) {\r\n      maxPoint.x = vector.x;\r\n      rightIndex = i;\r\n    }\r\n\r\n    if (vector.y < minPoint.y) {\r\n      minPoint.y = vector.y;\r\n      bottomIndex = i;\r\n    }\r\n\r\n    if (vector.y > maxPoint.y) {\r\n      maxPoint.y = vector.y;\r\n      topIndex = i;\r\n    }\r\n  }\r\n\r\n  let bestArea = Number.MAX_SAFE_INTEGER;\r\n  let bestOmbb: BestOmbb | undefined = undefined;\r\n\r\n  const isOmbbInside = (ombb: BestOmbb) => {\r\n    const [xMin, yMin] = minPoint.toPoint();\r\n    const [xMax, yMax] = maxPoint.toPoint();\r\n    return ombb.some(\r\n      (v) => v.x > xMin && v.x < xMax && v.y > yMin && v.y < yMax,\r\n    );\r\n  };\r\n\r\n  // initial caliper lines + directions\r\n  //\r\n  //        top\r\n  //      <-------\r\n  //      |      ^\r\n  //      |      | right\r\n  // left |      |\r\n  //      V      |\r\n  //      ------->\r\n  //       bottom\r\n  // Note: all of these are normalized vectors\r\n  let leftDir = new Vector(0, -1);\r\n  let rightDir = new Vector(0, 1);\r\n  let topDir = new Vector(-1, 0);\r\n  let bottomDir = new Vector(1, 0);\r\n\r\n  for (let i = 0; i < vectorList.length; i++) {\r\n    // --- Angle between the edge and the caliper line ---\r\n    // angle between 2 vectors = arc cosine of the dot product of the directional vectors\r\n    // since we already have the normalized vectors, we can use the dot product then arc cosine it\r\n    // 0 = left, 1 = right, 2 = top, 3 = bottom\r\n    const phiList = [\r\n      Math.acos(Vector.dot(leftDir, edgeDirectionList[leftIndex])),\r\n      Math.acos(Vector.dot(rightDir, edgeDirectionList[rightIndex])),\r\n      Math.acos(Vector.dot(topDir, edgeDirectionList[topIndex])),\r\n      Math.acos(Vector.dot(bottomDir, edgeDirectionList[bottomIndex])),\r\n    ];\r\n\r\n    const edgeIndexWithSmallestAngle = phiList.indexOf(Math.min(...phiList));\r\n\r\n    // Based on the smallest angle, update the caliper line\r\n    //  and construct the next oriented minimum bounding box candidate\r\n    //  using parallel and orthogonal lines\r\n    switch (edgeIndexWithSmallestAngle) {\r\n      case 0:\r\n        leftDir = edgeDirectionList[leftIndex].clone();\r\n        rightDir = Vector.negate(leftDir);\r\n        topDir = Vector.orthogonal(leftDir);\r\n        bottomDir = Vector.negate(topDir);\r\n\r\n        leftIndex = getNextIndex(leftIndex);\r\n        break;\r\n      case 1:\r\n        rightDir = edgeDirectionList[rightIndex].clone();\r\n        leftDir = Vector.negate(rightDir);\r\n        topDir = Vector.orthogonal(leftDir);\r\n        bottomDir = Vector.negate(topDir);\r\n\r\n        rightIndex = getNextIndex(rightIndex);\r\n        break;\r\n      case 2:\r\n        topDir = edgeDirectionList[topIndex].clone();\r\n        bottomDir = Vector.negate(topDir);\r\n        leftDir = Vector.orthogonal(bottomDir);\r\n        rightDir = Vector.negate(leftDir);\r\n\r\n        topIndex = getNextIndex(topIndex);\r\n        break;\r\n      case 3:\r\n        bottomDir = edgeDirectionList[bottomIndex].clone();\r\n        topDir = Vector.negate(bottomDir);\r\n        leftDir = Vector.orthogonal(bottomDir);\r\n        rightDir = Vector.negate(leftDir);\r\n\r\n        bottomIndex = getNextIndex(bottomIndex);\r\n        break;\r\n    }\r\n\r\n    const { area, ombb } = getNewOmbb(\r\n      vectorList[leftIndex],\r\n      leftDir,\r\n      vectorList[rightIndex],\r\n      rightDir,\r\n      vectorList[topIndex],\r\n      topDir,\r\n      vectorList[bottomIndex],\r\n      bottomDir,\r\n    );\r\n\r\n    if (area < bestArea && !isOmbbInside(ombb)) {\r\n      bestArea = area;\r\n      bestOmbb = ombb;\r\n    }\r\n  }\r\n\r\n  return bestOmbb?.map((v) => v.toPoint()) ?? null;\r\n};\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "const ombbPointList = getOrientedMinimumBoundingBox(convexHullList);\r\nombbPointList && drawPolygon([convexHullList, ombbPointList]);\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.ts.notebook.plotly+json",
+                            "value": {
+                                "requestId": "x9d113869d1004840b58d99f00803571d",
+                                "type": "generatePlot",
+                                "ele": "myDiv",
+                                "data": [],
+                                "layout": {
+                                    "xaxis": {
+                                        "range": [
+                                            0,
+                                            9
+                                        ],
+                                        "zeroline": false
+                                    },
+                                    "yaxis": {
+                                        "range": [
+                                            0,
+                                            11
+                                        ],
+                                        "showgrid": false
+                                    },
+                                    "width": 500,
+                                    "height": 500,
+                                    "shapes": [
+                                        {
+                                            "type": "path",
+                                            "path": "M 2 0 L 5 3 L 2 4 L 1 2  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 0 2 L 2 0 L 5 3 L 3 5  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "language": "typescript",
+            "source": [
+                ""
+            ],
+            "outputs": []
+        }
+    ]
+}

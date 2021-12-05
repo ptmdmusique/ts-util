@@ -2,3 +2,11 @@ node_modules
 read-dir/data
 ./node_modules
 ./read-dir/data
+**/*.js
+**/*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+**/*.txt
+**/*.jpg
+**/*.env
