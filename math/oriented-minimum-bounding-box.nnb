@@ -87,7 +87,7 @@
                         {
                             "mime": "application/vnd.ts.notebook.plotly+json",
                             "value": {
-                                "requestId": "x5e12c2236396431bae6972eb58609cc3",
+                                "requestId": "x9fcf8f3638ef4f97a1acb6127ca229ac",
                                 "type": "generatePlot",
                                 "ele": "myDiv",
                                 "data": [],
@@ -158,15 +158,26 @@
         {
             "language": "typescript",
             "source": [
-                "const ombbPointList = getOrientedMinimumBoundingBox(convexHullList);\r\nombbPointList && drawPolygon([convexHullList, ombbPointList]);\r\n"
+                "const ombbPointList = getOrientedMinimumBoundingBox(convexHullList);\r\nconsole.log(ombbPointList);\r\nombbPointList && drawPolygon([convexHullList, ombbPointList]);\r\n"
             ],
             "outputs": [
                 {
                     "items": [
                         {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "[ [ 0, 2 ], [ 3, 5 ], [ 2, 0 ], [ 5, 3 ] ]",
+                                ""
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
                             "mime": "application/vnd.ts.notebook.plotly+json",
                             "value": {
-                                "requestId": "x9d113869d1004840b58d99f00803571d",
+                                "requestId": "x57f4ebca36584bcc9b1501e2ed28d641",
                                 "type": "generatePlot",
                                 "ele": "myDiv",
                                 "data": [],
@@ -224,11 +235,31 @@
             ]
         },
         {
-            "language": "typescript",
+            "language": "markdown",
             "source": [
-                ""
+                "### Extra: bounding box angle to x-axis using the longer side"
             ],
             "outputs": []
+        },
+        {
+            "language": "typescript",
+            "source": [
+                "const getVectorAngleToXAxis = (x: number, y: number) =>\r\n  (Math.atan2(y, x) * 180) / Math.PI;\r\n\r\nif (ombbPointList) {\r\n  // * Find the longest edge\r\n  const sortedEdgeLengthList = sortPointListClockwise(ombbPointList);\r\n  const longestEdge = sortedEdgeLengthList.reduce<{\r\n    startIndex: number;\r\n    length: number;\r\n  }>(\r\n    (acc, curr, curIndex, arr) => {\r\n      const nextIndex = curIndex + 1 === arr.length ? 0 : curIndex + 1;\r\n      const curPoint = Vector.fromPoint(curr);\r\n      const nextPoint = Vector.fromPoint(arr[nextIndex]);\r\n      const distance = curPoint.distance(nextPoint);\r\n\r\n      return distance > acc.length\r\n        ? { length: distance, startIndex: curIndex }\r\n        : acc;\r\n    },\r\n    { length: 0, startIndex: 0 },\r\n  );\r\n\r\n  // * Get the angle\r\n  const startPoint = ombbPointList[longestEdge.startIndex];\r\n  const endPoint =\r\n    ombbPointList[(longestEdge.startIndex + 1) % ombbPointList.length];\r\n  const edgeDirection: Point = [\r\n    endPoint[0] - startPoint[0],\r\n    endPoint[1] - startPoint[1],\r\n  ];\r\n\r\n  const ombbAngle = getVectorAngleToXAxis(edgeDirection[0], edgeDirection[1]);\r\n  console.log(`OMBB Angle based on longer vector ${ombbAngle}`);\r\n}\r\n"
+            ],
+            "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.code.notebook.stdout",
+                            "value": [
+                                "45",
+                                "",
+                                ""
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }

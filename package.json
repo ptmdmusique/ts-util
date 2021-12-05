@@ -13,7 +13,6 @@
     "@mapbox/node-pre-gyp": "^1.0.3",
     "@sendgrid/mail": "^7.4.2",
     "@signalwire/node": "^2.3.3",
-    "@tensorflow/tfjs-node": "^3.4.0",
     "ajv": "^6.12.6",
     "axios": "^0.21.1",
     "chalk": "^4.1.0",
