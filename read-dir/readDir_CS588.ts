@@ -17,7 +17,7 @@ export async function readFiles(baseDirName: string) {
           // * Read the content and parse into JSON format
           const content = fs.readFileSync(
             path.join(curFolderName, fileName),
-            "utf-8"
+            "utf-8",
           );
           const jsonContent = JSON.parse(content);
 
@@ -36,6 +36,6 @@ export async function readFiles(baseDirName: string) {
       }
     });
   } catch (error) {
-    throw new Error(error);
+    throw new Error(error as any);
   }
 }

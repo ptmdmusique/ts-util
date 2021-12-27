@@ -60,7 +60,7 @@
         {
             "language": "typescript",
             "source": [
-                "import { Plotly } from \"node-kernel\";\r\n\r\nconst colorList = [\r\n  [255, 140, 184],\r\n  [52, 210, 235],\r\n  [50, 168, 82],\r\n  [119, 50, 168],\r\n];\r\nconst drawPolygon = (listOfPointList: Point[][]) => {\r\n  const layout: Parameters<typeof Plotly.newPlot>[2] = {\r\n    xaxis: {\r\n      range: [0, 100],\r\n      zeroline: false,\r\n    },\r\n    yaxis: {\r\n      range: [0, 100],\r\n      showgrid: false,\r\n    },\r\n    width: 500,\r\n    height: 500,\r\n    shapes: listOfPointList.map((pointList, index) => {\r\n      const color = colorList[index % colorList.length];\r\n      const sortedList = sortPointListClockwise(pointList);\r\n      return {\r\n        type: \"path\",\r\n        path: `M ${sortedList.map(([x, y]) => `${x} ${y} `).join(\"L \")} Z`,\r\n        fillcolor: `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.5)`,\r\n        line: {\r\n          color: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,\r\n        },\r\n      };\r\n    }),\r\n  };\r\n\r\n  // There is no HTML element named `myDiv`, hence the plot is displayed below.\r\n  Plotly.newPlot(\"myDiv\", [], layout);\r\n};\r\n"
+                "import { Plotly } from \"node-kernel\";\r\n\r\nconst colorList = [\r\n  [255, 140, 184],\r\n  [52, 210, 235],\r\n  [50, 168, 82],\r\n  [119, 50, 168],\r\n  [245, 66, 72],\r\n];\r\n\r\nconst drawPolygon = (listOfPointList: Point[][]) => {\r\n  const layout: Parameters<typeof Plotly.newPlot>[2] = {\r\n    xaxis: {\r\n      range: [50, 500],\r\n    },\r\n    yaxis: {\r\n      range: [50, 500],\r\n    },\r\n    width: 500,\r\n    height: 500,\r\n    shapes: listOfPointList.map((pointList, index) => {\r\n      const color = colorList[index % colorList.length];\r\n      const sortedList = sortPointListClockwise(pointList);\r\n      return {\r\n        type: \"path\",\r\n        path: `M ${sortedList.map(([x, y]) => `${x} ${y} `).join(\"L \")} Z`,\r\n        // fillcolor: `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.5)`,\r\n        line: {\r\n          color: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,\r\n        },\r\n      };\r\n    }),\r\n  };\r\n\r\n  // There is no HTML element named `myDiv`, hence the plot is displayed below.\r\n  Plotly.newPlot(\"myDiv\", [], layout);\r\n};\r\n"
             ],
             "outputs": [
                 {
@@ -79,7 +79,7 @@
         {
             "language": "typescript",
             "source": [
-                "const getOrientedMinimumBoundingBox = (\r\n  pointList: [number, number][],\r\n): Point[] | null => {\r\n  type BestOmbb = [Vector, Vector, Vector, Vector];\r\n\r\n  // * Rotating calipers algorithm\r\n  // https://github.com/geidav/ombb-rotating-calipers/blob/master/ombb.js\r\n\r\n  // ? Note: ombb = Oriented Minimum Bounding Box\r\n  // --- Helpers\r\n  const getNextIndex = (currentIndex: number): number =>\r\n    (currentIndex + 1) % pointList.length;\r\n\r\n  const getIntersectionPoint = (\r\n    // point0 and dir0 create line 0\r\n    point0: Vector,\r\n    dir0: Vector,\r\n    // point1 and dir1 create line 1\r\n    point1: Vector,\r\n    dir1: Vector,\r\n  ): Vector => {\r\n    // TODO: figure out the meaning of this\r\n    const dd = dir0.x * dir1.y - dir0.y * dir1.x;\r\n    const xDiff = point1.x - point0.x;\r\n    const yDiff = point1.y - point0.y;\r\n    // dd = 0 => lines are parallel. we don't care as our lines are never parallel.\r\n    const t = (xDiff * dir1.y - yDiff * dir1.x) / dd;\r\n    return new Vector(point0.x + t * dir0.x, point0.y + t * dir0.y);\r\n  };\r\n\r\n  const getNewOmbb = (\r\n    leftStart: Vector,\r\n    leftDir: Vector,\r\n    rightStart: Vector,\r\n    rightDir: Vector,\r\n    topStart: Vector,\r\n    topDir: Vector,\r\n    bottomStart: Vector,\r\n    bottomDir: Vector,\r\n  ): { ombb: BestOmbb; area: number } => {\r\n    const obbUpperLeft = getIntersectionPoint(\r\n      leftStart,\r\n      leftDir,\r\n      topStart,\r\n      topDir,\r\n    );\r\n    const obbUpperRight = getIntersectionPoint(\r\n      rightStart,\r\n      rightDir,\r\n      topStart,\r\n      topDir,\r\n    );\r\n    const obbLowerLeft = getIntersectionPoint(\r\n      bottomStart,\r\n      bottomDir,\r\n      leftStart,\r\n      leftDir,\r\n    );\r\n    const obbLowerRight = getIntersectionPoint(\r\n      bottomStart,\r\n      bottomDir,\r\n      rightStart,\r\n      rightDir,\r\n    );\r\n\r\n    const obbArea =\r\n      obbUpperLeft.distance(obbUpperRight) *\r\n      obbUpperLeft.distance(obbLowerLeft);\r\n\r\n    return {\r\n      area: obbArea,\r\n      ombb: [obbUpperLeft, obbUpperRight, obbLowerLeft, obbLowerRight],\r\n    };\r\n  };\r\n\r\n  // --- Actual implementation\r\n  const vectorList = pointList.map(([x, y]) => new Vector(x, y));\r\n\r\n  // * Normalized vector list (vector with length 1)\r\n  const edgeDirectionList = vectorList.map((v, index) => {\r\n    return Vector.normalize(Vector.diff(vectorList[getNextIndex(index)], v));\r\n  });\r\n\r\n  const minPoint = new Vector(Number.MAX_VALUE, Number.MAX_VALUE);\r\n  const maxPoint = new Vector(-Number.MAX_VALUE, -Number.MAX_VALUE);\r\n  let leftIndex: number;\r\n  let rightIndex: number;\r\n  let topIndex: number;\r\n  let bottomIndex: number;\r\n\r\n  // * Find the outermost points\r\n  for (let i = 0; i < vectorList.length; i++) {\r\n    const vector = vectorList[i];\r\n\r\n    if (vector.x < minPoint.x) {\r\n      minPoint.x = vector.x;\r\n      leftIndex = i;\r\n    }\r\n\r\n    if (vector.x > maxPoint.x) {\r\n      maxPoint.x = vector.x;\r\n      rightIndex = i;\r\n    }\r\n\r\n    if (vector.y < minPoint.y) {\r\n      minPoint.y = vector.y;\r\n      bottomIndex = i;\r\n    }\r\n\r\n    if (vector.y > maxPoint.y) {\r\n      maxPoint.y = vector.y;\r\n      topIndex = i;\r\n    }\r\n  }\r\n\r\n  let bestArea = Number.MAX_SAFE_INTEGER;\r\n  let bestOmbb: BestOmbb | undefined = undefined;\r\n\r\n  const isOmbbInside = (ombb: BestOmbb) => {\r\n    const [xMin, yMin] = minPoint.toPoint();\r\n    const [xMax, yMax] = maxPoint.toPoint();\r\n    return ombb.some(\r\n      (v) => v.x > xMin && v.x < xMax && v.y > yMin && v.y < yMax,\r\n    );\r\n  };\r\n\r\n  // initial caliper lines + directions\r\n  //\r\n  //        top\r\n  //      <-------\r\n  //      |      ^\r\n  //      |      | right\r\n  // left |      |\r\n  //      V      |\r\n  //      ------->\r\n  //       bottom\r\n  // Note: all of these are normalized vectors\r\n  let leftDir = new Vector(0, -1);\r\n  let rightDir = new Vector(0, 1);\r\n  let topDir = new Vector(-1, 0);\r\n  let bottomDir = new Vector(1, 0);\r\n\r\n  for (let i = 0; i < vectorList.length; i++) {\r\n    // --- Angle between the edge and the caliper line ---\r\n    // angle between 2 vectors = arc cosine of the dot product of the directional vectors\r\n    // since we already have the normalized vectors, we can use the dot product then arc cosine it\r\n    // 0 = left, 1 = right, 2 = top, 3 = bottom\r\n    const phiList = [\r\n      Math.acos(Vector.dot(leftDir, edgeDirectionList[leftIndex])),\r\n      Math.acos(Vector.dot(rightDir, edgeDirectionList[rightIndex])),\r\n      Math.acos(Vector.dot(topDir, edgeDirectionList[topIndex])),\r\n      Math.acos(Vector.dot(bottomDir, edgeDirectionList[bottomIndex])),\r\n    ];\r\n\r\n    const edgeIndexWithSmallestAngle = phiList.indexOf(Math.min(...phiList));\r\n\r\n    // Based on the smallest angle, update the caliper line\r\n    //  and construct the next oriented minimum bounding box candidate\r\n    //  using parallel and orthogonal lines\r\n    switch (edgeIndexWithSmallestAngle) {\r\n      case 0:\r\n        leftDir = edgeDirectionList[leftIndex].clone();\r\n        rightDir = Vector.negate(leftDir);\r\n        topDir = Vector.orthogonal(leftDir);\r\n        bottomDir = Vector.negate(topDir);\r\n\r\n        leftIndex = getNextIndex(leftIndex);\r\n        break;\r\n      case 1:\r\n        rightDir = edgeDirectionList[rightIndex].clone();\r\n        leftDir = Vector.negate(rightDir);\r\n        topDir = Vector.orthogonal(leftDir);\r\n        bottomDir = Vector.negate(topDir);\r\n\r\n        rightIndex = getNextIndex(rightIndex);\r\n        break;\r\n      case 2:\r\n        topDir = edgeDirectionList[topIndex].clone();\r\n        bottomDir = Vector.negate(topDir);\r\n        leftDir = Vector.orthogonal(bottomDir);\r\n        rightDir = Vector.negate(leftDir);\r\n\r\n        topIndex = getNextIndex(topIndex);\r\n        break;\r\n      case 3:\r\n        bottomDir = edgeDirectionList[bottomIndex].clone();\r\n        topDir = Vector.negate(bottomDir);\r\n        leftDir = Vector.orthogonal(bottomDir);\r\n        rightDir = Vector.negate(leftDir);\r\n\r\n        bottomIndex = getNextIndex(bottomIndex);\r\n        break;\r\n    }\r\n\r\n    const { area, ombb } = getNewOmbb(\r\n      vectorList[leftIndex],\r\n      leftDir,\r\n      vectorList[rightIndex],\r\n      rightDir,\r\n      vectorList[topIndex],\r\n      topDir,\r\n      vectorList[bottomIndex],\r\n      bottomDir,\r\n    );\r\n\r\n    if (area < bestArea && !isOmbbInside(ombb)) {\r\n      bestArea = area;\r\n      bestOmbb = ombb;\r\n    }\r\n  }\r\n\r\n  return bestOmbb?.map((v) => v.toPoint()) ?? null;\r\n};\r\n"
+                "const getOrientedMinimumBoundingBox = (\r\n  pointList: [number, number][],\r\n): Point[] | null => {\r\n  type BestOmbb = [Vector, Vector, Vector, Vector];\r\n\r\n  // * Rotating calipers algorithm\r\n  // https://github.com/geidav/ombb-rotating-calipers/blob/master/ombb.js\r\n\r\n  // ? Note: ombb = Oriented Minimum Bounding Box\r\n  // --- Helpers\r\n  const getNextIndex = (currentIndex: number): number =>\r\n    (currentIndex + 1) % pointList.length;\r\n\r\n  const getIntersectionPoint = (\r\n    // point0 and dir0 create line 0\r\n    point0: Vector,\r\n    dir0: Vector,\r\n    // point1 and dir1 create line 1\r\n    point1: Vector,\r\n    dir1: Vector,\r\n  ): Vector => {\r\n    // TODO: figure out the meaning of this\r\n    const dd = dir0.x * dir1.y - dir0.y * dir1.x;\r\n    const xDiff = point1.x - point0.x;\r\n    const yDiff = point1.y - point0.y;\r\n    // dd = 0 => lines are parallel. we don't care as our lines are never parallel.\r\n    const t = (xDiff * dir1.y - yDiff * dir1.x) / dd;\r\n    return new Vector(point0.x + t * dir0.x, point0.y + t * dir0.y);\r\n  };\r\n\r\n  const getNewOmbb = (\r\n    leftStart: Vector,\r\n    leftDir: Vector,\r\n    rightStart: Vector,\r\n    rightDir: Vector,\r\n    topStart: Vector,\r\n    topDir: Vector,\r\n    bottomStart: Vector,\r\n    bottomDir: Vector,\r\n  ): { ombb: BestOmbb; area: number } => {\r\n    const obbUpperLeft = getIntersectionPoint(\r\n      leftStart,\r\n      leftDir,\r\n      topStart,\r\n      topDir,\r\n    );\r\n    const obbUpperRight = getIntersectionPoint(\r\n      rightStart,\r\n      rightDir,\r\n      topStart,\r\n      topDir,\r\n    );\r\n    const obbLowerLeft = getIntersectionPoint(\r\n      bottomStart,\r\n      bottomDir,\r\n      leftStart,\r\n      leftDir,\r\n    );\r\n    const obbLowerRight = getIntersectionPoint(\r\n      bottomStart,\r\n      bottomDir,\r\n      rightStart,\r\n      rightDir,\r\n    );\r\n\r\n    const obbArea =\r\n      obbUpperLeft.distance(obbUpperRight) *\r\n      obbUpperLeft.distance(obbLowerLeft);\r\n\r\n    return {\r\n      area: obbArea,\r\n      ombb: [obbUpperLeft, obbUpperRight, obbLowerLeft, obbLowerRight],\r\n    };\r\n  };\r\n\r\n  // --- Actual implementation\r\n  const vectorList = pointList.map(([x, y]) => new Vector(x, y));\r\n\r\n  // * Normalized vector list (vector with length 1)\r\n  const edgeDirectionList = vectorList.map((v, index) => {\r\n    return Vector.normalize(Vector.diff(vectorList[getNextIndex(index)], v));\r\n  });\r\n\r\n  const minPoint = new Vector(Number.MAX_VALUE, Number.MAX_VALUE);\r\n  const maxPoint = new Vector(-Number.MAX_VALUE, -Number.MAX_VALUE);\r\n  let leftIndex: number;\r\n  let rightIndex: number;\r\n  let topIndex: number;\r\n  let bottomIndex: number;\r\n\r\n  // * Find the outermost points\r\n  for (let i = 0; i < vectorList.length; i++) {\r\n    const vector = vectorList[i];\r\n\r\n    if (vector.x < minPoint.x) {\r\n      minPoint.x = vector.x;\r\n      leftIndex = i;\r\n    }\r\n\r\n    if (vector.x > maxPoint.x) {\r\n      maxPoint.x = vector.x;\r\n      rightIndex = i;\r\n    }\r\n\r\n    if (vector.y < minPoint.y) {\r\n      minPoint.y = vector.y;\r\n      bottomIndex = i;\r\n    }\r\n\r\n    if (vector.y > maxPoint.y) {\r\n      maxPoint.y = vector.y;\r\n      topIndex = i;\r\n    }\r\n  }\r\n\r\n  let bestArea = Number.MAX_SAFE_INTEGER;\r\n  let bestOmbb: BestOmbb | undefined = undefined;\r\n\r\n  const isOmbbInside = (ombb: BestOmbb) => {\r\n    const [xMin, yMin] = minPoint.toPoint();\r\n    const [xMax, yMax] = maxPoint.toPoint();\r\n    return ombb.some(\r\n      (v) => v.x > xMin && v.x < xMax && v.y > yMin && v.y < yMax,\r\n    );\r\n  };\r\n\r\n  // initial caliper lines + directions\r\n  //\r\n  //        top\r\n  //      <-------\r\n  //      |      ^\r\n  //      |      | right\r\n  // left |      |\r\n  //      V      |\r\n  //      ------->\r\n  //       bottom\r\n  // Note: all of these are normalized vectors\r\n  let leftDir = new Vector(0, -1);\r\n  let rightDir = new Vector(0, 1);\r\n  let topDir = new Vector(-1, 0);\r\n  let bottomDir = new Vector(1, 0);\r\n\r\n  const ombbList: BestOmbb[] = [];\r\n\r\n  for (let i = 0; i < vectorList.length; i++) {\r\n    // --- Angle between the edge and the caliper line ---\r\n    // angle between 2 vectors = arc cosine of the dot product of the directional vectors\r\n    // since we already have the normalized vectors, we can use the dot product then arc cosine it\r\n    // 0 = left, 1 = right, 2 = top, 3 = bottom\r\n    const phiList = [\r\n      Math.acos(Vector.dot(leftDir, edgeDirectionList[leftIndex])),\r\n      Math.acos(Vector.dot(rightDir, edgeDirectionList[rightIndex])),\r\n      Math.acos(Vector.dot(topDir, edgeDirectionList[topIndex])),\r\n      Math.acos(Vector.dot(bottomDir, edgeDirectionList[bottomIndex])),\r\n    ];\r\n\r\n    const edgeIndexWithSmallestAngle = phiList.indexOf(Math.min(...phiList));\r\n\r\n    // Based on the smallest angle, update the caliper line\r\n    //  and construct the next oriented minimum bounding box candidate\r\n    //  using parallel and orthogonal lines\r\n    switch (edgeIndexWithSmallestAngle) {\r\n      case 0:\r\n        leftDir = edgeDirectionList[leftIndex].clone();\r\n        rightDir = Vector.negate(leftDir);\r\n        topDir = Vector.orthogonal(leftDir);\r\n        bottomDir = Vector.negate(topDir);\r\n\r\n        leftIndex = getNextIndex(leftIndex);\r\n        break;\r\n      case 1:\r\n        rightDir = edgeDirectionList[rightIndex].clone();\r\n        leftDir = Vector.negate(rightDir);\r\n        topDir = Vector.orthogonal(leftDir);\r\n        bottomDir = Vector.negate(topDir);\r\n\r\n        rightIndex = getNextIndex(rightIndex);\r\n        break;\r\n      case 2:\r\n        topDir = edgeDirectionList[topIndex].clone();\r\n        bottomDir = Vector.negate(topDir);\r\n        leftDir = Vector.orthogonal(bottomDir);\r\n        rightDir = Vector.negate(leftDir);\r\n\r\n        topIndex = getNextIndex(topIndex);\r\n        break;\r\n      case 3:\r\n        bottomDir = edgeDirectionList[bottomIndex].clone();\r\n        topDir = Vector.negate(bottomDir);\r\n        leftDir = Vector.orthogonal(bottomDir);\r\n        rightDir = Vector.negate(leftDir);\r\n\r\n        bottomIndex = getNextIndex(bottomIndex);\r\n        break;\r\n    }\r\n\r\n    const { area, ombb } = getNewOmbb(\r\n      vectorList[leftIndex],\r\n      leftDir,\r\n      vectorList[rightIndex],\r\n      rightDir,\r\n      vectorList[topIndex],\r\n      topDir,\r\n      vectorList[bottomIndex],\r\n      bottomDir,\r\n    );\r\n\r\n    ombbList.push(ombb);\r\n\r\n    if (area < bestArea && !isOmbbInside(ombb)) {\r\n      bestArea = area;\r\n      bestOmbb = ombb;\r\n    }\r\n  }\r\n\r\n  drawPolygon(ombbList.map((list) => list.map((v) => v.toPoint())));\r\n\r\n  return bestOmbb?.map((v) => v.toPoint()) ?? null;\r\n};\r\n"
             ],
             "outputs": [
                 {
@@ -117,9 +117,48 @@
         {
             "language": "typescript",
             "source": [
-                "const pointList: Point[] = [\r\n  [25, 25], [14, 41], [14, 63], [17, 83], [28, 94], [37, 72], [44, 47], [40, 26], [31, 19]\r\n].sort((a, b) => a[0] - b[0]);\r\n"
+                "const pointList: Point[] = [\r\n[287.5, 202.43055555555554], [287.15277777777777, 202.77777777777777], [286.80555555555554, 202.77777777777777], [286.4583333333333, 203.125], [285.76388888888886, 203.125], [285.41666666666663, 203.47222222222223], [285.06944444444446, 203.47222222222223], [284.72222222222223, 203.81944444444443], [284.375, 203.81944444444443], [284.02777777777777, 204.16666666666666], [283.68055555555554, 204.16666666666666], [283.3333333333333, 204.51388888888889], [282.9861111111111, 204.51388888888889], [282.63888888888886, 204.86111111111111], [281.94444444444446, 204.86111111111111], [281.59722222222223, 205.20833333333331], [280.2083333333333, 205.20833333333331], [279.8611111111111, 205.55555555555554], [278.81944444444446, 205.55555555555554], [278.47222222222223, 205.90277777777777], [278.125, 205.90277777777777], [277.77777777777777, 206.25], [277.43055555555554, 206.25], [277.0833333333333, 206.59722222222223], [276.7361111111111, 206.59722222222223], [276.38888888888886, 206.94444444444443], [276.04166666666663, 206.94444444444443], [275.34722222222223, 207.63888888888889], [275.0, 207.63888888888889], [274.65277777777777, 207.98611111111111], [274.30555555555554, 207.98611111111111], [271.875, 210.41666666666666], [271.52777777777777, 210.41666666666666], [271.52777777777777, 210.76388888888889], [268.75, 213.54166666666666], [268.75, 213.88888888888889], [267.7083333333333, 214.93055555555554], [267.7083333333333, 215.27777777777777], [267.3611111111111, 215.625], [267.3611111111111, 215.97222222222223], [267.01388888888886, 216.31944444444443], [267.01388888888886, 216.66666666666666], [266.31944444444446, 217.36111111111111], [266.31944444444446, 217.70833333333331], [265.97222222222223, 218.05555555555554], [265.97222222222223, 218.40277777777777], [265.625, 218.75], [265.625, 219.44444444444443], [265.27777777777777, 219.79166666666666], [265.27777777777777, 226.38888888888889], [265.625, 226.73611111111111], [265.625, 227.08333333333331], [266.31944444444446, 227.77777777777777], [266.31944444444446, 228.125], [266.66666666666663, 228.4722222222222], [267.01388888888886, 228.4722222222222], [267.7083333333333, 229.16666666666666], [268.05555555555554, 229.16666666666666], [268.40277777777777, 229.51388888888889], [268.75, 229.51388888888889], [269.44444444444446, 230.20833333333331], [269.79166666666663, 230.20833333333331], [270.13888888888886, 230.55555555555554], [270.8333333333333, 230.55555555555554], [271.18055555555554, 230.90277777777777], [271.875, 230.90277777777777], [272.22222222222223, 231.25], [272.56944444444446, 231.25], [272.91666666666663, 231.5972222222222], [274.30555555555554, 231.5972222222222], [274.65277777777777, 231.94444444444443], [275.34722222222223, 231.94444444444443], [275.69444444444446, 232.29166666666666], [280.2083333333333, 232.29166666666666], [280.55555555555554, 232.63888888888889], [280.90277777777777, 232.63888888888889], [281.25, 232.29166666666666], [284.72222222222223, 232.29166666666666], [285.06944444444446, 231.94444444444443], [285.41666666666663, 231.94444444444443], [285.76388888888886, 231.5972222222222], [286.4583333333333, 231.5972222222222], [286.80555555555554, 231.25], [287.15277777777777, 231.25], [287.5, 230.90277777777777], [287.84722222222223, 230.90277777777777], [288.54166666666663, 230.20833333333331], [288.88888888888886, 230.20833333333331], [289.5833333333333, 229.51388888888889], [289.93055555555554, 229.51388888888889], [290.27777777777777, 229.16666666666666], [290.625, 229.16666666666666], [292.01388888888886, 227.77777777777777], [292.3611111111111, 227.77777777777777], [293.05555555555554, 227.08333333333331], [293.40277777777777, 227.08333333333331], [294.79166666666663, 225.69444444444443], [295.13888888888886, 225.69444444444443], [296.18055555555554, 224.65277777777777], [296.18055555555554, 224.30555555555554], [298.9583333333333, 221.52777777777777], [298.9583333333333, 220.83333333333331], [299.30555555555554, 220.48611111111111], [299.30555555555554, 215.97222222222223], [299.65277777777777, 215.625], [299.65277777777777, 213.19444444444443], [299.30555555555554, 212.84722222222223], [299.30555555555554, 208.68055555555554], [298.9583333333333, 208.33333333333331], [298.9583333333333, 207.98611111111111], [298.6111111111111, 207.63888888888889], [298.6111111111111, 207.29166666666666], [298.26388888888886, 206.94444444444443], [298.26388888888886, 206.59722222222223], [296.875, 205.20833333333331], [296.875, 204.86111111111111], [296.52777777777777, 204.51388888888889], [296.18055555555554, 204.51388888888889], [294.79166666666663, 203.125], [294.44444444444446, 203.125], [294.09722222222223, 202.77777777777777], [293.75, 202.77777777777777], [293.40277777777777, 202.43055555555554],\r\n].sort((a, b) => a[0] - b[0]);\r\n\r\ndrawPolygon([pointList]);\r\n"
             ],
             "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.ts.notebook.plotly+json",
+                            "value": {
+                                "requestId": "xed7a8ae412594fa49fc000220e917fbb",
+                                "type": "generatePlot",
+                                "ele": "myDiv",
+                                "data": [],
+                                "layout": {
+                                    "xaxis": {
+                                        "range": [
+                                            50,
+                                            500
+                                        ]
+                                    },
+                                    "yaxis": {
+                                        "range": [
+                                            50,
+                                            500
+                                        ]
+                                    },
+                                    "width": 500,
+                                    "height": 500,
+                                    "shapes": [
+                                        {
+                                            "type": "path",
+                                            "path": "M 266.31944444444446 217.36111111111111 L 267.01388888888886 216.66666666666666 L 267.01388888888886 216.31944444444443 L 267.3611111111111 215.97222222222223 L 267.3611111111111 215.625 L 267.7083333333333 215.27777777777777 L 267.7083333333333 214.93055555555554 L 268.75 213.88888888888889 L 268.75 213.54166666666666 L 271.52777777777777 210.76388888888889 L 271.52777777777777 210.41666666666666 L 271.875 210.41666666666666 L 274.30555555555554 207.98611111111111 L 274.65277777777777 207.98611111111111 L 275 207.63888888888889 L 275.34722222222223 207.63888888888889 L 276.04166666666663 206.94444444444443 L 276.38888888888886 206.94444444444443 L 276.7361111111111 206.59722222222223 L 277.0833333333333 206.59722222222223 L 277.43055555555554 206.25 L 277.77777777777777 206.25 L 278.125 205.90277777777777 L 278.47222222222223 205.90277777777777 L 278.81944444444446 205.55555555555554 L 279.8611111111111 205.55555555555554 L 280.2083333333333 205.20833333333331 L 281.59722222222223 205.20833333333331 L 281.94444444444446 204.86111111111111 L 282.63888888888886 204.86111111111111 L 282.9861111111111 204.51388888888889 L 283.3333333333333 204.51388888888889 L 283.68055555555554 204.16666666666666 L 284.02777777777777 204.16666666666666 L 284.375 203.81944444444443 L 284.72222222222223 203.81944444444443 L 285.06944444444446 203.47222222222223 L 285.41666666666663 203.47222222222223 L 285.76388888888886 203.125 L 286.4583333333333 203.125 L 286.80555555555554 202.77777777777777 L 287.15277777777777 202.77777777777777 L 287.5 202.43055555555554 L 293.40277777777777 202.43055555555554 L 293.75 202.77777777777777 L 294.09722222222223 202.77777777777777 L 294.44444444444446 203.125 L 294.79166666666663 203.125 L 296.18055555555554 204.51388888888889 L 296.52777777777777 204.51388888888889 L 296.875 204.86111111111111 L 296.875 205.20833333333331 L 298.26388888888886 206.59722222222223 L 298.26388888888886 206.94444444444443 L 298.6111111111111 207.29166666666666 L 298.6111111111111 207.63888888888889 L 298.9583333333333 207.98611111111111 L 298.9583333333333 208.33333333333331 L 299.30555555555554 208.68055555555554 L 299.30555555555554 212.84722222222223 L 299.65277777777777 213.19444444444443 L 299.65277777777777 215.625 L 299.30555555555554 215.97222222222223 L 299.30555555555554 220.48611111111111 L 298.9583333333333 220.83333333333331 L 298.9583333333333 221.52777777777777 L 296.18055555555554 224.30555555555554 L 296.18055555555554 224.65277777777777 L 295.13888888888886 225.69444444444443 L 294.79166666666663 225.69444444444443 L 293.40277777777777 227.08333333333331 L 293.05555555555554 227.08333333333331 L 292.3611111111111 227.77777777777777 L 292.01388888888886 227.77777777777777 L 290.625 229.16666666666666 L 290.27777777777777 229.16666666666666 L 289.93055555555554 229.51388888888889 L 289.5833333333333 229.51388888888889 L 288.88888888888886 230.20833333333331 L 288.54166666666663 230.20833333333331 L 287.84722222222223 230.90277777777777 L 287.5 230.90277777777777 L 287.15277777777777 231.25 L 286.80555555555554 231.25 L 286.4583333333333 231.5972222222222 L 285.76388888888886 231.5972222222222 L 285.41666666666663 231.94444444444443 L 285.06944444444446 231.94444444444443 L 284.72222222222223 232.29166666666666 L 281.25 232.29166666666666 L 280.90277777777777 232.63888888888889 L 280.55555555555554 232.63888888888889 L 280.2083333333333 232.29166666666666 L 275.69444444444446 232.29166666666666 L 275.34722222222223 231.94444444444443 L 274.65277777777777 231.94444444444443 L 274.30555555555554 231.5972222222222 L 272.91666666666663 231.5972222222222 L 272.56944444444446 231.25 L 272.22222222222223 231.25 L 271.875 230.90277777777777 L 271.18055555555554 230.90277777777777 L 270.8333333333333 230.55555555555554 L 270.13888888888886 230.55555555555554 L 269.79166666666663 230.20833333333331 L 269.44444444444446 230.20833333333331 L 268.75 229.51388888888889 L 268.40277777777777 229.51388888888889 L 268.05555555555554 229.16666666666666 L 267.7083333333333 229.16666666666666 L 267.01388888888886 228.4722222222222 L 266.66666666666663 228.4722222222222 L 266.31944444444446 228.125 L 266.31944444444446 227.77777777777777 L 265.625 227.08333333333331 L 265.625 226.73611111111111 L 265.27777777777777 226.38888888888889 L 265.27777777777777 219.79166666666666 L 265.625 219.44444444444443 L 265.625 218.75 L 265.97222222222223 218.40277777777777 L 265.97222222222223 218.05555555555554 L 266.31944444444446 217.70833333333331  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
                 {
                     "items": [
                         {
@@ -143,9 +182,48 @@
         {
             "language": "typescript",
             "source": [
-                "const convexHullList = getConvexHull(pointList);\r\nconst clockwisePointList = sortPointListClockwise(convexHullList);\r\n"
+                "const convexHullList = getConvexHull(pointList);\r\ndrawPolygon([convexHullList]);\r\nconst clockwisePointList = sortPointListClockwise(convexHullList);\r\n"
             ],
             "outputs": [
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.ts.notebook.plotly+json",
+                            "value": {
+                                "requestId": "x139bf885d5fa4f38bb680cf383c256b4",
+                                "type": "generatePlot",
+                                "ele": "myDiv",
+                                "data": [],
+                                "layout": {
+                                    "xaxis": {
+                                        "range": [
+                                            50,
+                                            500
+                                        ]
+                                    },
+                                    "yaxis": {
+                                        "range": [
+                                            50,
+                                            500
+                                        ]
+                                    },
+                                    "width": 500,
+                                    "height": 500,
+                                    "shapes": [
+                                        {
+                                            "type": "path",
+                                            "path": "M 266.31944444444446 217.36111111111111 L 267.7083333333333 214.93055555555554 L 268.75 213.54166666666666 L 271.52777777777777 210.41666666666666 L 274.30555555555554 207.98611111111111 L 276.04166666666663 206.94444444444443 L 278.81944444444446 205.55555555555554 L 287.5 202.43055555555554 L 293.40277777777777 202.43055555555554 L 294.09722222222223 202.77777777777777 L 294.79166666666663 203.125 L 296.52777777777777 204.51388888888889 L 296.875 204.86111111111111 L 298.26388888888886 206.59722222222223 L 298.6111111111111 207.29166666666666 L 299.30555555555554 208.68055555555554 L 299.65277777777777 213.19444444444443 L 299.65277777777777 215.625 L 299.30555555555554 220.48611111111111 L 298.9583333333333 221.52777777777777 L 296.18055555555554 224.65277777777777 L 295.13888888888886 225.69444444444443 L 293.40277777777777 227.08333333333331 L 290.625 229.16666666666666 L 287.84722222222223 230.90277777777777 L 287.15277777777777 231.25 L 286.4583333333333 231.5972222222222 L 284.72222222222223 232.29166666666666 L 280.90277777777777 232.63888888888889 L 280.55555555555554 232.63888888888889 L 275.69444444444446 232.29166666666666 L 272.91666666666663 231.5972222222222 L 270.13888888888886 230.55555555555554 L 269.44444444444446 230.20833333333331 L 267.7083333333333 229.16666666666666 L 266.66666666666663 228.4722222222222 L 266.31944444444446 228.125 L 265.625 227.08333333333331 L 265.27777777777777 226.38888888888889 L 265.27777777777777 219.79166666666666 L 265.625 218.75 L 265.97222222222223 218.05555555555554  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
                 {
                     "items": [
                         {
@@ -170,31 +248,29 @@
                         {
                             "mime": "application/vnd.ts.notebook.plotly+json",
                             "value": {
-                                "requestId": "x2737cc6d491a4978a87665e6f092a3ef",
+                                "requestId": "x08b530572a074a57a80b03af71067826",
                                 "type": "generatePlot",
                                 "ele": "myDiv",
                                 "data": [],
                                 "layout": {
                                     "xaxis": {
                                         "range": [
-                                            0,
-                                            100
-                                        ],
-                                        "zeroline": false
+                                            50,
+                                            500
+                                        ]
                                     },
                                     "yaxis": {
                                         "range": [
-                                            0,
-                                            100
-                                        ],
-                                        "showgrid": false
+                                            50,
+                                            500
+                                        ]
                                     },
                                     "width": 500,
                                     "height": 500,
                                     "shapes": [
                                         {
                                             "type": "path",
-                                            "path": "M 14 41 L 25 25 L 31 19 L 40 26 L 44 47 L 37 72 L 28 94 L 17 83 L 14 63  Z",
+                                            "path": "M 265.27777777777777 202.43055555555554 L 299.65277777777777 202.43055555555554 L 299.65277777777777 232.63888888888889 L 265.27777777777777 232.63888888888889  Z",
                                             "fillcolor": "rgba(255, 140, 184, 0.5)",
                                             "line": {
                                                 "color": "rgb(255, 140, 184)"
@@ -202,7 +278,374 @@
                                         },
                                         {
                                             "type": "path",
-                                            "path": "M 20.948071216617215 16.18545994065282 L 50.32492581602374 24.41097922848665 L 30.633531157270028 94.73738872403561 L 1.2566765578635 86.51186943620178  Z",
+                                            "path": "M 265.27777777777777 202.43055555555554 L 299.65277777777777 202.43055555555554 L 299.65277777777777 232.63888888888889 L 265.27777777777777 232.63888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 265.27777777777777 202.43055555555554 L 299.65277777777777 202.43055555555554 L 299.65277777777777 232.63888888888889 L 265.27777777777777 232.63888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 265.27777777777777 202.43055555555554 L 299.65277777777777 202.43055555555554 L 299.65277777777777 232.63888888888889 L 265.27777777777777 232.63888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 266.654328821207 200.5199520586576 L 300.55872814438806 202.94169486745628 L 298.3467287084038 233.9096869712352 L 264.44232938522276 231.48794416243652  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 266.654328821207 200.5199520586576 L 300.55872814438806 202.94169486745628 L 298.3467287084038 233.90968697123523 L 264.44232938522276 231.48794416243652  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 271.0171568627451 196.83415032679738 L 303.20669934640523 204.8815359477124 L 295.13888888888886 237.15277777777777 L 262.94934640522877 229.10539215686273  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 273.29861111111137 195.72916666666654 L 304.1319444444445 206.00694444444457 L 293.33333333333314 238.40277777777789 L 262.49999999999994 228.1249999999999  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 273.29861111111137 195.72916666666654 L 304.1319444444445 206.00694444444457 L 293.33333333333314 238.40277777777789 L 262.49999999999994 228.1249999999999  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 274.4149543378995 195.31012176560122 L 304.5519406392694 206.61149162861486 L 292.4372146118722 238.91742770167423 L 262.3002283105023 227.6160578386606  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(50, 168, 82, 0.5)",
+                                            "line": {
+                                                "color": "rgb(50, 168, 82)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(119, 50, 168, 0.5)",
+                                            "line": {
+                                                "color": "rgb(119, 50, 168)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 277.7083333333333 194.58333333333331 L 305.4861111111111 208.4722222222222 L 289.5833333333333 240.27777777777777 L 261.80555555555554 226.38888888888889  Z",
+                                            "fillcolor": "rgba(52, 210, 235, 0.5)",
+                                            "line": {
+                                                "color": "rgb(52, 210, 235)"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "items": [
+                        {
+                            "mime": "application/vnd.ts.notebook.plotly+json",
+                            "value": {
+                                "requestId": "x08b530572a074a57a80b03af71067826",
+                                "type": "generatePlot",
+                                "ele": "myDiv",
+                                "data": [],
+                                "layout": {
+                                    "xaxis": {
+                                        "range": [
+                                            50,
+                                            500
+                                        ]
+                                    },
+                                    "yaxis": {
+                                        "range": [
+                                            50,
+                                            500
+                                        ]
+                                    },
+                                    "width": 500,
+                                    "height": 500,
+                                    "shapes": [
+                                        {
+                                            "type": "path",
+                                            "path": "M 266.31944444444446 217.36111111111111 L 267.01388888888886 216.66666666666666 L 267.01388888888886 216.31944444444443 L 267.3611111111111 215.97222222222223 L 267.3611111111111 215.625 L 267.7083333333333 215.27777777777777 L 267.7083333333333 214.93055555555554 L 268.75 213.88888888888889 L 268.75 213.54166666666666 L 271.52777777777777 210.76388888888889 L 271.52777777777777 210.41666666666666 L 271.875 210.41666666666666 L 274.30555555555554 207.98611111111111 L 274.65277777777777 207.98611111111111 L 275 207.63888888888889 L 275.34722222222223 207.63888888888889 L 276.04166666666663 206.94444444444443 L 276.38888888888886 206.94444444444443 L 276.7361111111111 206.59722222222223 L 277.0833333333333 206.59722222222223 L 277.43055555555554 206.25 L 277.77777777777777 206.25 L 278.125 205.90277777777777 L 278.47222222222223 205.90277777777777 L 278.81944444444446 205.55555555555554 L 279.8611111111111 205.55555555555554 L 280.2083333333333 205.20833333333331 L 281.59722222222223 205.20833333333331 L 281.94444444444446 204.86111111111111 L 282.63888888888886 204.86111111111111 L 282.9861111111111 204.51388888888889 L 283.3333333333333 204.51388888888889 L 283.68055555555554 204.16666666666666 L 284.02777777777777 204.16666666666666 L 284.375 203.81944444444443 L 284.72222222222223 203.81944444444443 L 285.06944444444446 203.47222222222223 L 285.41666666666663 203.47222222222223 L 285.76388888888886 203.125 L 286.4583333333333 203.125 L 286.80555555555554 202.77777777777777 L 287.15277777777777 202.77777777777777 L 287.5 202.43055555555554 L 293.40277777777777 202.43055555555554 L 293.75 202.77777777777777 L 294.09722222222223 202.77777777777777 L 294.44444444444446 203.125 L 294.79166666666663 203.125 L 296.18055555555554 204.51388888888889 L 296.52777777777777 204.51388888888889 L 296.875 204.86111111111111 L 296.875 205.20833333333331 L 298.26388888888886 206.59722222222223 L 298.26388888888886 206.94444444444443 L 298.6111111111111 207.29166666666666 L 298.6111111111111 207.63888888888889 L 298.9583333333333 207.98611111111111 L 298.9583333333333 208.33333333333331 L 299.30555555555554 208.68055555555554 L 299.30555555555554 212.84722222222223 L 299.65277777777777 213.19444444444443 L 299.65277777777777 215.625 L 299.30555555555554 215.97222222222223 L 299.30555555555554 220.48611111111111 L 298.9583333333333 220.83333333333331 L 298.9583333333333 221.52777777777777 L 296.18055555555554 224.30555555555554 L 296.18055555555554 224.65277777777777 L 295.13888888888886 225.69444444444443 L 294.79166666666663 225.69444444444443 L 293.40277777777777 227.08333333333331 L 293.05555555555554 227.08333333333331 L 292.3611111111111 227.77777777777777 L 292.01388888888886 227.77777777777777 L 290.625 229.16666666666666 L 290.27777777777777 229.16666666666666 L 289.93055555555554 229.51388888888889 L 289.5833333333333 229.51388888888889 L 288.88888888888886 230.20833333333331 L 288.54166666666663 230.20833333333331 L 287.84722222222223 230.90277777777777 L 287.5 230.90277777777777 L 287.15277777777777 231.25 L 286.80555555555554 231.25 L 286.4583333333333 231.5972222222222 L 285.76388888888886 231.5972222222222 L 285.41666666666663 231.94444444444443 L 285.06944444444446 231.94444444444443 L 284.72222222222223 232.29166666666666 L 281.25 232.29166666666666 L 280.90277777777777 232.63888888888889 L 280.55555555555554 232.63888888888889 L 280.2083333333333 232.29166666666666 L 275.69444444444446 232.29166666666666 L 275.34722222222223 231.94444444444443 L 274.65277777777777 231.94444444444443 L 274.30555555555554 231.5972222222222 L 272.91666666666663 231.5972222222222 L 272.56944444444446 231.25 L 272.22222222222223 231.25 L 271.875 230.90277777777777 L 271.18055555555554 230.90277777777777 L 270.8333333333333 230.55555555555554 L 270.13888888888886 230.55555555555554 L 269.79166666666663 230.20833333333331 L 269.44444444444446 230.20833333333331 L 268.75 229.51388888888889 L 268.40277777777777 229.51388888888889 L 268.05555555555554 229.16666666666666 L 267.7083333333333 229.16666666666666 L 267.01388888888886 228.4722222222222 L 266.66666666666663 228.4722222222222 L 266.31944444444446 228.125 L 266.31944444444446 227.77777777777777 L 265.625 227.08333333333331 L 265.625 226.73611111111111 L 265.27777777777777 226.38888888888889 L 265.27777777777777 219.79166666666666 L 265.625 219.44444444444443 L 265.625 218.75 L 265.97222222222223 218.40277777777777 L 265.97222222222223 218.05555555555554 L 266.31944444444446 217.70833333333331  Z",
+                                            "fillcolor": "rgba(255, 140, 184, 0.5)",
+                                            "line": {
+                                                "color": "rgb(255, 140, 184)"
+                                            }
+                                        },
+                                        {
+                                            "type": "path",
+                                            "path": "M 265.27777777777777 202.43055555555554 L 299.65277777777777 202.43055555555554 L 299.65277777777777 232.63888888888889 L 265.27777777777777 232.63888888888889  Z",
                                             "fillcolor": "rgba(52, 210, 235, 0.5)",
                                             "line": {
                                                 "color": "rgb(52, 210, 235)"
@@ -238,7 +681,7 @@
                         {
                             "mime": "application/vnd.code.notebook.stdout",
                             "value": [
-                                "OMBB Angle based on longer vector 105.64224645720874",
+                                "OMBB Angle based on longer vector 0",
                                 "",
                                 ""
                             ]
