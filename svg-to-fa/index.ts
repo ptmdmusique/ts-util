@@ -18,6 +18,7 @@ const writeTSFileFromJSON = () => {
 
   const iconList = data.icons;
   iconList.forEach((icon) => {
+    // @ts-ignore
     const rawIconName = icon.tags[0];
     const splittedName = rawIconName.split("-");
     const iconType = splittedName.pop();
@@ -33,6 +34,7 @@ const writeTSFileFromJSON = () => {
         prefix = setPrefix + "s";
         break;
     }
+    // @ts-ignore
     const pathList = icon.paths;
 
     const objName = lodash.camelCase(rawIconName);
@@ -55,13 +57,13 @@ const listFromRegex = (
   originalStr: string,
   eleRegex: RegExp,
   attrRegex: RegExp,
-  redundantRegex: RegExp
+  redundantRegex: RegExp,
 ) =>
   originalStr
     .match(eleRegex)
     ?.map(
       (path) =>
-        path.match(attrRegex)?.map((d) => d.replace(redundantRegex, ""))[0]
+        path.match(attrRegex)?.map((d) => d.replace(redundantRegex, ""))[0],
     );
 
 // ! Unfinished! Cases left: rectangle, etc
@@ -115,13 +117,13 @@ const writeTSFileFromSVG = () => {
       result,
       pathRegex,
       dRegex,
-      redundantPathRegex
+      redundantPathRegex,
     );
     const pointList = listFromRegex(
       result,
       polygonRegex,
       pointRegex,
-      redundantPointRegex
+      redundantPointRegex,
     )?.map((point) => `M${point}z`);
 
     const finalList = ([] as (string | undefined)[])
