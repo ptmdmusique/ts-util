@@ -61,7 +61,7 @@ const mockService = (): Service => {
     alias: faker.commerce.productName(),
     cost: parseFloat(faker.commerce.price()),
     tagList,
-    processTime: faker.datatype.number({ min: 1, max: 10 }),
+    processTime: faker.datatype.number({ min: 600000, max: 3600000 }),
     type: "nail",
     isTemplate: false,
     note: faker.lorem.paragraph(),
