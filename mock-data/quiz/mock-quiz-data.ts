@@ -105,7 +105,6 @@ interface TeacherAccount {
 }
 
 // * --- Helpers
-const getMockClassId = (index: number) => `class-${index}-id` as const;
 const getMockQuizId = (index: number) => `quiz-${index}-id` as const;
 const getMockQuestionVersionId = (index: number) =>
   `question-version-${index}-id` as const;
@@ -278,13 +277,22 @@ const mockBaseQuiz = (): QuizBaseSchema => {
 };
 
 const baseQuizList: QuizBaseSchema[] = [];
+const mockQuizIdMap: Record<
+  `quiz${number}Id`,
+  ReturnType<typeof getMockQuizId>
+> = {};
 for (let index = 0; index < 10; index++) {
   baseQuizList.push(mockBaseQuiz());
+  mockQuizIdMap[`quiz${index}Id`] = getMockQuizId(index);
 }
 
 type QuizId = string;
 type QuestionVersionList = Record<QuizId, QuestionVersionSchema[]>;
 const questionVersionList: QuestionVersionList = {};
+const mockQuestionVersionIdMap: Record<
+  `questionVersion${number}Id`,
+  ReturnType<typeof getMockQuestionVersionId>
+> = {};
 for (let index = 0; index < 10; index++) {
   const quizId = faker.random.arrayElement(baseQuizList).id;
   if (!questionVersionList[quizId]) {
@@ -296,6 +304,9 @@ for (let index = 0; index < 10; index++) {
     version: faker.datatype.number({ min: 1, max: 10 }),
     questionList: faker.random.arrayElement(questionSetList),
   });
+
+  mockQuestionVersionIdMap[`questionVersion${index}Id`] =
+    getMockQuestionVersionId(index);
 }
 
 // write result to json
