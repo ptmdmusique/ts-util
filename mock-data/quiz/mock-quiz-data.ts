@@ -132,11 +132,13 @@ const mockSchoolClass = (index: number): SchoolClassCreate => {
 const schoolClassList: SchoolClassCreate[] = [];
 const mockSchooClassIdMap: Record<
   `schoolClass${number}Id`,
-  ReturnType<typeof getMockSchoolClassId>
+  `getMockSchoolClassId(${number})`
 > = {};
-for (let index = 0; index < 10; index++) {
+for (let index = 2; index < 10; index++) {
   schoolClassList.push(mockSchoolClass(index));
-  mockSchooClassIdMap[`schoolClass${index}Id`] = getMockSchoolClassId(index);
+  mockSchooClassIdMap[
+    `schoolClass${index}Id`
+  ] = `getMockSchoolClassId(${index})`;
 }
 
 const mockStudentAccount = (index: number): StudentAccount => {
@@ -150,11 +152,11 @@ const mockStudentAccount = (index: number): StudentAccount => {
 const studentList: StudentAccount[] = [];
 const mockStudentIdMap: Record<
   `student${number}Id`,
-  ReturnType<typeof getMockStudentId>
+  `getMockStudentId(${number})`
 > = {};
-for (let index = 0; index < 10; index++) {
+for (let index = 3; index < 11; index++) {
   studentList.push(mockStudentAccount(index));
-  mockStudentIdMap[`student${index}Id`] = getMockStudentId(index);
+  mockStudentIdMap[`student${index}Id`] = `getMockStudentId(${index})`;
 }
 
 const mockTeacherAccount = (index: number): TeacherAccount => {
@@ -169,22 +171,33 @@ const mockTeacherAccount = (index: number): TeacherAccount => {
 const teacherList: TeacherAccount[] = [];
 const mockTeacherIdMap: Record<
   `teacher${number}Id`,
-  ReturnType<typeof getMockTeacherId>
+  `getMockTeacherId(${number})`
 > = {};
-for (let index = 0; index < 10; index++) {
+for (let index = 2; index < 11; index++) {
   teacherList.push(mockTeacherAccount(index));
-  mockTeacherIdMap[`teacher${index}Id`] = getMockTeacherId(index);
+  mockTeacherIdMap[`teacher${index}Id`] = `getMockTeacherId(${index})`;
 }
 
 // * --- Question
-const mockMultipleChoiceQuestion = (): MultipleChoiceQuestionSchema => {
+const mockQuestionAnswerIdMap: Record<
+  `question${number}Answer${number}Id`,
+  `getMockQuestionAnswerId(${number}, ${number}, ${number})`
+> = {};
+const mockMultipleChoiceQuestion = (
+  questionIndex: number,
+  setIndex: number,
+): MultipleChoiceQuestionSchema => {
   const numPossibleAnswer = faker.datatype.number({ min: 2, max: 4 });
   const possibleAnswerList: PossibleAnswerSchema[] = [];
   for (let index = 0; index < numPossibleAnswer; index++) {
     possibleAnswerList.push({
-      id: faker.datatype.uuid(),
+      id: getMockQuestionAnswerId(index, questionIndex, setIndex),
       description: faker.lorem.sentence(),
     });
+
+    mockQuestionAnswerIdMap[
+      `question${questionIndex}Answer${index}Id`
+    ] = `getMockQuestionAnswerId(${index}, ${questionIndex}, ${setIndex})`;
   }
 
   const actualAnswer: MultipleChoiceActualAnswerSchema = {
@@ -192,7 +205,7 @@ const mockMultipleChoiceQuestion = (): MultipleChoiceQuestionSchema => {
   };
 
   return {
-    id: faker.datatype.uuid(),
+    id: getMockQuestionId(questionIndex, setIndex),
     grade: faker.datatype.number({ min: 1, max: 10 }),
     description: faker.lorem.sentence(),
     type: "multipleChoice",
@@ -201,14 +214,21 @@ const mockMultipleChoiceQuestion = (): MultipleChoiceQuestionSchema => {
   };
 };
 
-const mockCheckboxQuestion = (): CheckboxQuestionSchema => {
+const mockCheckboxQuestion = (
+  questionIndex: number,
+  setIndex: number,
+): CheckboxQuestionSchema => {
   const numPossibleAnswer = faker.datatype.number({ min: 2, max: 4 });
   const possibleAnswerList: PossibleAnswerSchema[] = [];
   for (let index = 0; index < numPossibleAnswer; index++) {
     possibleAnswerList.push({
-      id: faker.datatype.uuid(),
+      id: getMockQuestionAnswerId(index, questionIndex, setIndex),
       description: faker.lorem.sentence(),
     });
+
+    mockQuestionAnswerIdMap[
+      `question${questionIndex}Answer${index}Id`
+    ] = `getMockQuestionAnswerId(${index}, ${questionIndex}, ${setIndex})`;
   }
 
   const actualAnswer: CheckboxActualAnswerSchema = {
@@ -218,7 +238,7 @@ const mockCheckboxQuestion = (): CheckboxQuestionSchema => {
   };
 
   return {
-    id: faker.datatype.uuid(),
+    id: getMockQuestionId(questionIndex, setIndex),
     grade: faker.datatype.number({ min: 1, max: 10 }),
     description: faker.lorem.sentence(),
     type: "checkboxes",
@@ -227,22 +247,37 @@ const mockCheckboxQuestion = (): CheckboxQuestionSchema => {
   };
 };
 
+const mockQuestionIdMap: Record<
+  `question${number}Id`,
+  `getMockQuestionId(${number}, ${number})`
+> = {};
 const mockQuestionSetList = (): QuestionSchema[][] => {
-  const numQuestion = faker.datatype.number({ min: 2, max: 4 });
-  const questionList: QuestionSchema[] = [];
-  for (let index = 0; index < numQuestion; index++) {
-    questionList.push(
-      faker.random.arrayElement([
-        mockMultipleChoiceQuestion(),
-        mockCheckboxQuestion(),
-      ]),
-    );
-  }
+  const createQuestionList = (setIndex: number) => {
+    const numQuestion = faker.datatype.number({ min: 2, max: 4 });
+    const questionList: QuestionSchema[] = [];
+    for (let index = 0; index < numQuestion; index++) {
+      const choice = faker.random.arrayElement([
+        "multipleChoice",
+        "checkboxes",
+      ]);
 
-  const numQuestionSet = faker.datatype.number({ min: 2, max: 4 });
+      questionList.push(
+        choice === "multipleChoice"
+          ? mockMultipleChoiceQuestion(index, setIndex)
+          : mockCheckboxQuestion(index, setIndex),
+      );
+
+      mockQuestionIdMap[
+        `question${index}Id`
+      ] = `getMockQuestionId(${index}, ${setIndex})`;
+    }
+
+    return questionList;
+  };
+
   const questionSetList: QuestionSchema[][] = [];
-  for (let index = 0; index < numQuestionSet; index++) {
-    questionSetList.push(questionList);
+  for (let index = 3; index < 21; index++) {
+    questionSetList.push(createQuestionList(index));
   }
 
   return questionSetList;
@@ -251,10 +286,10 @@ const mockQuestionSetList = (): QuestionSchema[][] => {
 const questionSetList = mockQuestionSetList();
 
 // * --- Quiz
-const mockBaseQuiz = (): QuizBaseSchema => {
+const mockBaseQuiz = (index: number): QuizBaseSchema => {
   const teacher = faker.random.arrayElement(teacherList);
   return {
-    id: faker.datatype.uuid(),
+    id: getMockQuizId(index),
     createdDate: faker.date.past().toISOString(),
     lastModifiedDate: faker.date.past().toISOString(),
     latestQuestionVersion: faker.datatype.number({ min: 1, max: 10 }),
@@ -277,13 +312,10 @@ const mockBaseQuiz = (): QuizBaseSchema => {
 };
 
 const baseQuizList: QuizBaseSchema[] = [];
-const mockQuizIdMap: Record<
-  `quiz${number}Id`,
-  ReturnType<typeof getMockQuizId>
-> = {};
-for (let index = 0; index < 10; index++) {
-  baseQuizList.push(mockBaseQuiz());
-  mockQuizIdMap[`quiz${index}Id`] = getMockQuizId(index);
+const mockQuizIdMap: Record<`quiz${number}Id`, `getMockQuizId(${number})`> = {};
+for (let index = 5; index < 15; index++) {
+  baseQuizList.push(mockBaseQuiz(index));
+  mockQuizIdMap[`quiz${index}Id`] = `getMockQuizId(${index})`;
 }
 
 type QuizId = string;
@@ -291,26 +323,43 @@ type QuestionVersionList = Record<QuizId, QuestionVersionSchema[]>;
 const questionVersionList: QuestionVersionList = {};
 const mockQuestionVersionIdMap: Record<
   `questionVersion${number}Id`,
-  ReturnType<typeof getMockQuestionVersionId>
+  `getMockQuestionVersionId(${number})`
 > = {};
-for (let index = 0; index < 10; index++) {
+for (let index = 6; index < 16; index++) {
   const quizId = faker.random.arrayElement(baseQuizList).id;
   if (!questionVersionList[quizId]) {
     questionVersionList[quizId] = [];
   }
 
   questionVersionList[quizId].push({
-    id: faker.datatype.uuid(),
+    id: getMockQuestionVersionId(index),
     version: faker.datatype.number({ min: 1, max: 10 }),
     questionList: faker.random.arrayElement(questionSetList),
   });
 
-  mockQuestionVersionIdMap[`questionVersion${index}Id`] =
-    getMockQuestionVersionId(index);
+  mockQuestionVersionIdMap[
+    `questionVersion${index}Id`
+  ] = `getMockQuestionVersionId(${index})`;
 }
 
+const outData = {
+  // ---
+  mockSchooClassIdMap,
+  mockStudentIdMap,
+  mockTeacherIdMap,
+  mockQuestionAnswerIdMap,
+  mockQuestionIdMap,
+  mockQuizIdMap,
+  mockQuestionVersionIdMap,
+
+  // ---
+  studentList,
+  teacherList,
+  schoolClassList,
+  baseQuizList,
+  questionSetList,
+  questionVersionList,
+};
+
 // write result to json
-fs.writeFileSync(
-  "./mock-quiz-data.json",
-  JSON.stringify(mockQuestionSetList(), null, 2),
-);
+fs.writeFileSync("./mock-quiz-data.json", JSON.stringify(outData, null, 2));
