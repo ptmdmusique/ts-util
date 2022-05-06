@@ -140,7 +140,7 @@ const getMockTeacherId = (index: number) => `teacher-${index}-id` as const;
 // * --- School class
 const mockClass = (index: number): SchoolClassCreate => {
   return {
-    id: getMockClassId(index),
+    id: `getMockClassId(${index})`,
     fullName: faker.company.companyName(),
     expirationTime: faker.date.future().toISOString(),
   };
@@ -203,7 +203,7 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
 
 const mockTeacherAccount = (index: number): TeacherAccount => {
   return {
-    id: getMockTeacherId(index),
+    id: `getMockTeacherId(${index})`,
     fullName: faker.name.findName(),
     subject: faker.random.arrayElement(supportedSubjectList),
     passkey: faker.datatype.uuid(),
@@ -356,7 +356,7 @@ const mockQuestionSetList = getMockQuestionSetList();
 const mockBaseQuiz = (index: number): QuizBaseSchema => {
   const teacher = faker.random.arrayElement(teacherList);
   return {
-    id: getMockQuizId(index),
+    id: `getMockQuizId(${index})`,
     createdDate: faker.date.past().toISOString(),
     lastModifiedDate: faker.date.past().toISOString(),
     latestQuestionVersion: faker.datatype.number({ min: 1, max: 10 }),
@@ -403,7 +403,7 @@ for (
   }
 
   questionVersionList[quizId].push({
-    id: getMockQuestionVersionId(index),
+    id: `getMockQuestionVersionId(${index})`,
     version: faker.datatype.number({ min: 1, max: 10 }),
     questionList: faker.random.arrayElement(mockQuestionSetList),
   });
@@ -415,8 +415,8 @@ for (
 
 // TODO: mock student submission
 // TODO: mock student grade
-// TODO: fix question version id and quizId assignment
-// TODO: fix baseQuizList id, teacherId, assignedClassIdList assignment
+// TODO: fix ~~question version id~~ and ~~quizId assignment~~
+// TODO: fix ~~baseQuizList id~~, ~~teacherId~~, ~~assignedClassIdList~~ assignment
 
 const outData = {
   // ---
