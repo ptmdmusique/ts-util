@@ -1,5 +1,25 @@
 import faker from "faker";
 import fs from "fs";
+import {
+  CheckboxActualAnswerSchema,
+  CheckboxQuestionSchema,
+  MultipleChoiceActualAnswerSchema,
+  MultipleChoiceQuestionSchema,
+  PossibleAnswerSchema,
+  QuestionSchema,
+  QuestionVersionSchema,
+  QuizBaseSchema,
+  SavedAnswerSchema,
+  SchoolClassCreate,
+  StudentAccount,
+  StudentGrade,
+  StudentGradeSchema,
+  StudentSubmission,
+  SupportedSubject,
+  supportedSubjectList,
+  TeacherAccount,
+} from "./types";
+import { gradeSubmission } from "./utils";
 
 const mockStartIndex = {
   class: 4,
@@ -7,7 +27,6 @@ const mockStartIndex = {
   teacher: 2,
   questionSet: 3,
   quiz: 5,
-  questionVersion: 6,
 } as const;
 
 const numToMock = {
@@ -16,131 +35,12 @@ const numToMock = {
   teacher: 10,
   questionSet: 20,
   quiz: 20,
-  questionVersion: 20,
 } as const;
-
-// * --- Quiz
-export const supportedSubjectList = [
-  "math",
-  "literature",
-  "physics",
-  "computerScience",
-] as const;
-export type SupportedSubject = typeof supportedSubjectList[number];
-
-const questionTypeList = ["multipleChoice", "checkboxes"] as const;
-type QuestionType = typeof questionTypeList[number];
-
-interface CheckboxActualAnswerSchema {
-  answerIdList: string[];
-}
-
-interface MultipleChoiceActualAnswerSchema {
-  answerId: string | null;
-}
-
-type ActualAnswerSchema =
-  | CheckboxActualAnswerSchema
-  | MultipleChoiceActualAnswerSchema;
-
-interface PossibleAnswerSchema {
-  id: string;
-  description: string;
-}
-
-interface BaseQuestionSchema {
-  id: string;
-  grade: number;
-  description: string;
-  type: QuestionType;
-  possibleAnswerList: PossibleAnswerSchema[];
-  actualAnswer: ActualAnswerSchema;
-}
-
-interface CheckboxQuestionSchema extends BaseQuestionSchema {
-  type: "checkboxes";
-  actualAnswer: CheckboxActualAnswerSchema;
-}
-
-interface MultipleChoiceQuestionSchema extends BaseQuestionSchema {
-  type: "multipleChoice";
-  actualAnswer: MultipleChoiceActualAnswerSchema;
-}
-
-type QuestionSchema = MultipleChoiceQuestionSchema | CheckboxQuestionSchema;
-
-interface QuestionVersionSchema {
-  id: string;
-  version: number;
-  questionList: QuestionSchema[];
-}
-
-export interface QuizBaseSchema {
-  id: string;
-  createdDate: string;
-  lastModifiedDate: string;
-  latestQuestionVersion: number;
-
-  /** Used in the end of the year
-   * or when the teacher doesn't want the student to see the quiz anymore
-   * but still want to edit or something
-   * */
-  isHidden: boolean;
-
-  teacherId: string;
-  assignedClassIdList: string[];
-
-  isClosed: boolean;
-  doShuffleQuestion: boolean;
-  doShowGrade: boolean;
-  doShowCorrectAnswer: boolean;
-  isGraded: boolean;
-
-  description?: string;
-  title: string;
-  subject: SupportedSubject;
-  deadline: string;
-}
-
-// * --- Users
-interface SchoolClassCreate {
-  id: string;
-  fullName: string;
-  expirationTime: string;
-}
-
-interface StudentAccount {
-  id: string;
-  fullName: string;
-  classId: string;
-}
-
-interface TeacherAccount {
-  id: string;
-  fullName: string;
-  subject: SupportedSubject;
-  passkey: string;
-}
-
-// * --- Helpers
-const getMockQuizId = (index: number) => `quiz-${index}-id` as const;
-const getMockQuestionVersionId = (index: number) =>
-  `question-version-${index}-id` as const;
-const getMockQuestionId = (questionIndex: number, setIndex: number) =>
-  `question-${setIndex}-${questionIndex}-id` as const;
-const getMockQuestionAnswerId = (
-  answerIndex: number,
-  questionIndex: number,
-  setIndex: number,
-) => `set-${setIndex}-question-${questionIndex}-answer-${answerIndex}` as const;
-const getMockClassId = (index: number) => `school-class-${index}-id` as const;
-const getMockStudentId = (index: number) => `student-${index}-id` as const;
-const getMockTeacherId = (index: number) => `teacher-${index}-id` as const;
 
 // * --- School class
 const mockClass = (index: number): SchoolClassCreate => {
   return {
-    id: `getMockClassId(${index})`,
+    id: `mockClassIdMap.class${index}Id`,
     fullName: faker.company.companyName(),
     expirationTime: faker.date.future().toISOString(),
   };
@@ -167,7 +67,7 @@ for (let index = mockStartIndex.class; index <= numToMock.class; index++) {
 // * --- Users
 const mockStudentAccount = (index: number): StudentAccount => {
   return {
-    id: getMockStudentId(index),
+    id: `studentMockIdMap.student${index}Id`,
     fullName: faker.name.findName(),
     classId: faker.random.arrayElement(classList).id,
   };
@@ -179,7 +79,7 @@ const mockStudentIdMap: Record<
   `getMockStudentId(${number})`
 > = {};
 const mockStudentListToCreate: Record<
-  `studentMockIdMap.student${number}Id`,
+  `[studentMockIdMap.student${number}Id]`,
   {
     classId: `mockClassIdMap.class${number}Id`;
     email: string;
@@ -193,9 +93,9 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
   studentList.push(newStudent);
   mockStudentIdMap[`student${index}Id`] = `getMockStudentId(${index})`;
 
-  mockStudentListToCreate[`studentMockIdMap.student${index}Id`] = {
+  mockStudentListToCreate[`[studentMockIdMap.student${index}Id]`] = {
     classId: `mockClassIdMap.class${index}Id`,
-    email: faker.internet.email(),
+    email: `test-${index}@student.com`,
     fullName: newStudent.fullName,
     password: "123456",
   };
@@ -203,7 +103,7 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
 
 const mockTeacherAccount = (index: number): TeacherAccount => {
   return {
-    id: `getMockTeacherId(${index})`,
+    id: `teacherMockIdMap.teacher${index}Id`,
     fullName: faker.name.findName(),
     subject: faker.random.arrayElement(supportedSubjectList),
     passkey: faker.datatype.uuid(),
@@ -216,7 +116,7 @@ const mockTeacherIdMap: Record<
   `getMockTeacherId(${number})`
 > = {};
 const mockTeacherListToCreate: Record<
-  `teacherMockIdMap.teacher${number}Id`,
+  `[teacherMockIdMap.teacher${number}Id]`,
   {
     subject: SupportedSubject;
     email: string;
@@ -233,9 +133,9 @@ for (let index = mockStartIndex.student; index <= numToMock.teacher; index++) {
 
   mockTeacherIdMap[`teacher${index}Id`] = `getMockTeacherId(${index})`;
   mockPasskeyList.push(newTeacher.passkey);
-  mockTeacherListToCreate[`teacherMockIdMap.teacher${index}Id`] = {
+  mockTeacherListToCreate[`[teacherMockIdMap.teacher${index}Id]`] = {
     subject: newTeacher.subject,
-    email: faker.internet.email(),
+    email: `test-${index}@teacher.com`,
     fullName: newTeacher.fullName,
     password: "123456",
     passkey: `getMockPasskeyList()[${mockPasskeyList.length - 1}]`,
@@ -356,7 +256,7 @@ const mockQuestionSetList = getMockQuestionSetList();
 const mockBaseQuiz = (index: number): QuizBaseSchema => {
   const teacher = faker.random.arrayElement(teacherList);
   return {
-    id: `getMockQuizId(${index})`,
+    id: `mockQuizIdMap.quiz${index}Id`,
     createdDate: faker.date.past().toISOString(),
     lastModifiedDate: faker.date.past().toISOString(),
     latestQuestionVersion: faker.datatype.number({ min: 1, max: 10 }),
@@ -385,36 +285,148 @@ for (let index = mockStartIndex.quiz; index <= numToMock.quiz; index++) {
   mockQuizIdMap[`quiz${index}Id`] = `getMockQuizId(${index})`;
 }
 
-type QuizId = string;
-type QuestionVersionList = Record<QuizId, QuestionVersionSchema[]>;
-const questionVersionList: QuestionVersionList = {};
+const questionVersionList: Record<
+  `[mockQuizIdMap.quiz${number}Id]`,
+  QuestionVersionSchema[]
+> = {};
 const mockQuestionVersionIdMap: Record<
   `questionVersion${number}Id`,
   `getMockQuestionVersionId(${number})`
 > = {};
-for (
-  let index = mockStartIndex.questionVersion;
-  index <= numToMock.questionVersion;
-  index++
-) {
-  const quizId = faker.random.arrayElement(baseQuizList).id;
-  if (!questionVersionList[quizId]) {
-    questionVersionList[quizId] = [];
+for (let index = 0; index < baseQuizList.length; index++) {
+  const quiz = baseQuizList[index];
+  const quizIndex = mockStartIndex.quiz + index;
+  const quizId = `[${quiz.id}]` as const;
+
+  questionVersionList[quizId] = [];
+
+  for (
+    let version = 0;
+    version < faker.datatype.number({ min: 2, max: 5 });
+    version++
+  ) {
+    questionVersionList[quizId].push({
+      id: `mockQuestionVersionIdMap.questionVersion${quizIndex}Id`,
+      version: version,
+      questionList: faker.random.arrayElement(mockQuestionSetList),
+    });
+
+    mockQuestionVersionIdMap[
+      `questionVersion${index}Id`
+    ] = `getMockQuestionVersionId(${index})`;
   }
 
-  questionVersionList[quizId].push({
-    id: `getMockQuestionVersionId(${index})`,
-    version: faker.datatype.number({ min: 1, max: 10 }),
-    questionList: faker.random.arrayElement(mockQuestionSetList),
-  });
-
-  mockQuestionVersionIdMap[
-    `questionVersion${index}Id`
-  ] = `getMockQuestionVersionId(${index})`;
+  quiz.latestQuestionVersion = questionVersionList[quizId].length - 1;
 }
 
-// TODO: mock student submission
-// TODO: mock student grade
+const mockStudentSubmission: Record<
+  `[studentMockIdMap.student${number}Id]`,
+  StudentSubmission[]
+> = {};
+const mockStudentSubmissionIdMap: Record<
+  `studentSubmission${number}Id`,
+  `getMockStudentSubmissionId(${number})`
+> = {};
+for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
+  const studentId = `studentMockIdMap.student${index}Id` as const;
+  const studentIdKey = `[${studentId}]` as const;
+  const { classId } = mockStudentListToCreate[studentIdKey];
+
+  let quizListForClass = baseQuizList.filter((quiz) =>
+    quiz.assignedClassIdList.includes(classId),
+  );
+
+  mockStudentSubmission[studentIdKey] = [];
+
+  for (
+    let index = 0;
+    index < faker.datatype.number({ min: 0, max: quizListForClass.length });
+    index++
+  ) {
+    const mockQuiz = faker.random.arrayElement(quizListForClass);
+    quizListForClass = quizListForClass.filter(
+      (quiz) => quiz.id !== mockQuiz.id,
+    );
+
+    const quizIndex =
+      baseQuizList.findIndex((quiz) => quiz.id === mockQuiz.id) +
+      mockStartIndex.quiz;
+
+    const questionVersion = questionVersionList[
+      `[${mockQuiz.id}]` as const
+    ].find(
+      (questionVersion) =>
+        questionVersion.version === mockQuiz.latestQuestionVersion,
+    );
+
+    mockStudentSubmission[studentIdKey].push({
+      quizId: `mockQuizIdMap.quiz${quizIndex}Id`,
+      version: mockQuiz.latestQuestionVersion,
+      savedAnswerList: faker.random
+        .arrayElements(questionVersion?.questionList ?? [])
+        .map<SavedAnswerSchema>((question) => {
+          switch (question.type) {
+            case "checkboxes":
+              return {
+                questionId: question.id,
+                type: question.type,
+                answerIdList: faker.random
+                  .arrayElements(question.possibleAnswerList)
+                  .map((answer) => answer.id),
+              };
+            case "multipleChoice":
+              return {
+                questionId: question.id,
+                type: question.type,
+                answerId: faker.random.arrayElement(question.possibleAnswerList)
+                  .id,
+              };
+          }
+        }),
+    });
+  }
+}
+
+const mockStudentGradeSchema: Record<
+  `[studentMockIdMap.student${number}Id]`,
+  StudentGradeSchema[]
+> = {};
+for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
+  const studentId = `studentMockIdMap.student${index}Id` as const;
+  const studentIdKey = `[${studentId}]` as const;
+
+  const studentSubmissionList = mockStudentSubmission[studentIdKey];
+  mockStudentGradeSchema[studentIdKey] = studentSubmissionList.map(
+    (submission) => {
+      const quiz = baseQuizList.find((quiz) => quiz.id === submission.quizId)!;
+      const questionList =
+        questionVersionList[`[${quiz.id}]` as const].find(
+          (questionVersion) => questionVersion.version === submission.version,
+        )?.questionList ?? [];
+
+      const savedAnswerList = submission.savedAnswerList;
+
+      const grade = gradeSubmission(savedAnswerList, questionList);
+
+      return {
+        quizId: submission.quizId,
+        studentId,
+        version: submission.version,
+
+        gradeMap: grade.reduce<Record<string, StudentGrade>>(
+          (acc, grade) => ({
+            ...acc,
+            [grade.questionId]: { autoGrade: grade.grade, manualGrade: null },
+          }),
+          {},
+        ),
+      };
+    },
+  );
+}
+
+// TODO: ~~mock student grade~~
+// TODO: ~~mock student submission~~
 // TODO: fix ~~question version id~~ and ~~quizId assignment~~
 // TODO: fix ~~baseQuizList id~~, ~~teacherId~~, ~~assignedClassIdList~~ assignment
 
@@ -427,6 +439,7 @@ const outData = {
   mockQuestionIdMap,
   mockQuizIdMap,
   mockQuestionVersionIdMap,
+  mockStudentSubmissionIdMap,
   break1: {},
 
   // ---
@@ -443,7 +456,10 @@ const outData = {
   mockStudentListToCreate,
   mockTeacherListToCreate,
   mockPasskeyList,
+  mockStudentSubmission,
+  mockStudentGradeSchema,
 };
 
 // write result to json
+console.info("Writing to file");
 fs.writeFileSync("./mock-quiz-data.json", JSON.stringify(outData, null, 2));
