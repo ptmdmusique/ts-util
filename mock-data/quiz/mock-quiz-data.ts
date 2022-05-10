@@ -337,12 +337,12 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
   );
 
   mockStudentSubmission[studentIdKey] = [];
+  const numToMock = faker.datatype.number({
+    min: 0,
+    max: quizListForClass.length,
+  });
 
-  for (
-    let index = 0;
-    index < faker.datatype.number({ min: 0, max: quizListForClass.length });
-    index++
-  ) {
+  for (let index = 0; index < numToMock; index++) {
     const mockQuiz = faker.random.arrayElement(quizListForClass);
     quizListForClass = quizListForClass.filter(
       (quiz) => quiz.id !== mockQuiz.id,
@@ -367,19 +367,45 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
         .map<SavedAnswerSchema>((question) => {
           switch (question.type) {
             case "checkboxes":
+              const correctAnswerIdList = question.actualAnswer.answerIdList;
+              const incorrectAnswerIdList = question.possibleAnswerList
+                .filter((answer) => !correctAnswerIdList.includes(answer.id))
+                .map((answer) => answer.id);
+
+              const chance = faker.datatype.number({ min: 0, max: 100 });
+
               return {
                 questionId: question.id,
                 type: question.type,
-                answerIdList: faker.random
-                  .arrayElements(question.possibleAnswerList)
-                  .map((answer) => answer.id),
+                answerIdList: [
+                  ...(chance < 30
+                    ? [
+                        ...faker.random.arrayElements(correctAnswerIdList),
+                        ...faker.random.arrayElements(incorrectAnswerIdList),
+                      ]
+                    : chance < 70
+                    ? faker.random.arrayElements(correctAnswerIdList)
+                    : faker.random.arrayElements(incorrectAnswerIdList)),
+                ],
               };
             case "multipleChoice":
+              const correctAnswerId = question.actualAnswer.answerId!;
+              const isCorrect =
+                faker.datatype.number({
+                  min: 0,
+                  max: 100,
+                }) > 50;
+
               return {
                 questionId: question.id,
                 type: question.type,
-                answerId: faker.random.arrayElement(question.possibleAnswerList)
-                  .id,
+                answerId: isCorrect
+                  ? correctAnswerId
+                  : faker.random.arrayElement(
+                      question.possibleAnswerList.filter(
+                        (answer) => answer.id !== correctAnswerId,
+                      ),
+                    ).id,
               };
           }
         }),
