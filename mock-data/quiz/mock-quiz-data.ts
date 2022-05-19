@@ -3,6 +3,7 @@ import fs from "fs";
 import {
   CheckboxActualAnswerSchema,
   CheckboxQuestionSchema,
+  MockQuestionVersionSchema,
   MultipleChoiceActualAnswerSchema,
   MultipleChoiceQuestionSchema,
   PossibleAnswerSchema,
@@ -30,11 +31,11 @@ const mockStartIndex = {
 } as const;
 
 const numToMock = {
-  class: 10,
-  student: 10,
+  class: 5,
+  student: 30,
   teacher: 10,
-  questionSet: 20,
-  quiz: 20,
+  questionSet: 30,
+  quiz: 30,
 } as const;
 
 // * --- School class
@@ -94,7 +95,7 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
   mockStudentIdMap[`student${index}Id`] = `getMockStudentId(${index})`;
 
   mockStudentListToCreate[`[studentMockIdMap.student${index}Id]`] = {
-    classId: `mockClassIdMap.class${index}Id`,
+    classId: newStudent.classId,
     email: `test-${index}@student.com`,
     fullName: newStudent.fullName,
     password: "123456",
@@ -127,7 +128,7 @@ const mockTeacherListToCreate: Record<
 > = {};
 const mockPasskeyList: string[] = [];
 
-for (let index = mockStartIndex.student; index <= numToMock.teacher; index++) {
+for (let index = mockStartIndex.teacher; index <= numToMock.teacher; index++) {
   const newTeacher = mockTeacherAccount(index);
   teacherList.push(newTeacher);
 
@@ -197,7 +198,7 @@ const mockCheckboxQuestion = (
 
   const actualAnswer: CheckboxActualAnswerSchema = {
     answerIdList: faker.random
-      .arrayElements(possibleAnswerList, 1)
+      .arrayElements(possibleAnswerList)
       .map((possibleAnswer) => possibleAnswer.id),
   };
 
@@ -285,10 +286,14 @@ for (let index = mockStartIndex.quiz; index <= numToMock.quiz; index++) {
   mockQuizIdMap[`quiz${index}Id`] = `getMockQuizId(${index})`;
 }
 
-const questionVersionList: Record<
-  `[mockQuizIdMap.quiz${number}Id]`,
-  QuestionVersionSchema[]
+type QuestionVersionId = `[mockQuizIdMap.quiz${number}Id]`;
+const questionVersionList: Record<QuestionVersionId, QuestionVersionSchema[]> =
+  {};
+const mockQuestionVersionList: Record<
+  QuestionVersionId,
+  MockQuestionVersionSchema[]
 > = {};
+
 const mockQuestionVersionIdMap: Record<
   `questionVersion${number}Id`,
   `getMockQuestionVersionId(${number})`
@@ -299,21 +304,32 @@ for (let index = 0; index < baseQuizList.length; index++) {
   const quizId = `[${quiz.id}]` as const;
 
   questionVersionList[quizId] = [];
+  mockQuestionVersionList[quizId] = [];
 
   for (
     let version = 0;
     version < faker.datatype.number({ min: 2, max: 5 });
     version++
   ) {
-    questionVersionList[quizId].push({
-      id: `mockQuestionVersionIdMap.questionVersion${quizIndex}Id`,
+    const id =
+      `mockQuestionVersionIdMap.questionVersion${quizIndex}Id` as const;
+    const questionList = faker.random.arrayElement(mockQuestionSetList);
+
+    questionVersionList[quizId].push({ id, version, questionList });
+    mockQuestionVersionList[quizId].push({
+      id,
       version: version,
-      questionList: faker.random.arrayElement(mockQuestionSetList),
+      questionList: questionList.map((question) => {
+        const index = questionList.findIndex(
+          (curQuestion) => curQuestion.id === question.id,
+        );
+        return `...mockQuestionSetList[${index}]` as const;
+      }),
     });
 
     mockQuestionVersionIdMap[
-      `questionVersion${index}Id`
-    ] = `getMockQuestionVersionId(${index})`;
+      `questionVersion${quizIndex}Id`
+    ] = `getMockQuestionVersionId(${quizIndex})`;
   }
 
   quiz.latestQuestionVersion = questionVersionList[quizId].length - 1;
@@ -432,17 +448,20 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
 
       const savedAnswerList = submission.savedAnswerList;
 
-      const grade = gradeSubmission(savedAnswerList, questionList);
+      const gradeList = gradeSubmission(savedAnswerList, questionList);
 
       return {
         quizId: submission.quizId,
         studentId,
         version: submission.version,
 
-        gradeMap: grade.reduce<Record<string, StudentGrade>>(
+        gradeMap: gradeList.reduce<Record<string, StudentGrade>>(
           (acc, grade) => ({
             ...acc,
-            [grade.questionId]: { autoGrade: grade.grade, manualGrade: null },
+            [`[${grade.questionId}]`]: {
+              autoGrade: grade.grade,
+              manualGrade: null,
+            },
           }),
           {},
         ),
@@ -455,6 +474,8 @@ for (let index = mockStartIndex.student; index <= numToMock.student; index++) {
 // TODO: ~~mock student submission~~
 // TODO: fix ~~question version id~~ and ~~quizId assignment~~
 // TODO: fix ~~baseQuizList id~~, ~~teacherId~~, ~~assignedClassIdList~~ assignment
+// TODO: fix ~~questionVersionList to use reference instead~~
+// TODO: add random teacher grade to student submission (?)
 
 const outData = {
   // ---
@@ -477,6 +498,7 @@ const outData = {
   break2: {},
 
   // ---
+  mockQuestionVersionList,
   mockQuestionSetList,
   mockClassInfoList,
   mockStudentListToCreate,

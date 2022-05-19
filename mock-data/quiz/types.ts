@@ -28,7 +28,7 @@ export interface PossibleAnswerSchema {
 }
 
 export interface BaseQuestionSchema {
-  id: string;
+  id: `mockQuestionIdMap.set${number}Question${number}Id`;
   grade: number;
   description: string;
   type: QuestionType;
@@ -54,6 +54,12 @@ export interface QuestionVersionSchema {
   id: string;
   version: number;
   questionList: QuestionSchema[];
+}
+
+export interface MockQuestionVersionSchema {
+  id: string;
+  version: number;
+  questionList: `...mockQuestionSetList[${number}]`[];
 }
 
 export interface QuizBaseSchema {
@@ -127,24 +133,27 @@ export interface StudentGradeSchema {
   version: number;
 
   /** <question's id, StudentGrade> */
-  gradeMap: Record<string, StudentGrade> | null;
+  gradeMap: Record<
+    `[mockQuestionIdMap.set${number}Question${number}Id]`,
+    StudentGrade
+  > | null;
 }
 
 // * --- Users
 export interface SchoolClassCreate {
-  id: string;
+  id: `mockClassIdMap.class${number}Id`;
   fullName: string;
   expirationTime: string;
 }
 
 export interface StudentAccount {
-  id: string;
+  id: `studentMockIdMap.student${number}Id`;
   fullName: string;
-  classId: string;
+  classId: SchoolClassCreate["id"];
 }
 
 export interface TeacherAccount {
-  id: string;
+  id: `teacherMockIdMap.teacher${number}Id`;
   fullName: string;
   subject: SupportedSubject;
   passkey: string;
