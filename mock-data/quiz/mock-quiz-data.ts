@@ -139,7 +139,10 @@ for (let index = mockStartIndex.teacher; index <= numToMock.teacher; index++) {
     email: `test-${index}@teacher.com`,
     fullName: newTeacher.fullName,
     password: "123456",
-    passkey: `getMockPasskeyList()[${mockPasskeyList.length - 1}]`,
+    // 1 more -1 because we start from 1
+    passkey: `getMockPasskeyList()[${
+      mockPasskeyList.length - 1 - 1 + mockStartIndex.teacher
+    }]`,
   };
 }
 
